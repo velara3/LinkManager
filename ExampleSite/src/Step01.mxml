@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   color="#333333"
+			   backgroundColor="#ffffff"
+			   xmlns:managers="com.flexcapacitor.managers.*" 
+			   xmlns:controls="com.flexcapacitor.controls.*" 
+			   xmlns:containers="com.flexcapacitor.containers.*" 
+			   xmlns:vo="com.flexcapacitor.vo.*" 
+			   xmlns:utils="com.flexcapacitor.utils.*" 
+			   xmlns:handlers="com.flexcapacitor.handlers.*" 
+			   xmlns:actions="com.flexcapacitor.actions.*"
+>
+	<!-- Flex 4 SDK changed the namespace and some properties. This compiles in the latest build but not the public beta -->
+	<!-- STYLES -->
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace controls "com.flexcapacitor.controls.*";
+		
+		global {
+			font-size:12;
+			linkColor:#185fc0;
+			focusRoundedCorners:8;
+			focusThickness:1;
+			fontFamily: Arial;
+		}
+		s|Application {
+			skinClass: ClassReference("ApplicationBackground");
+		}
+		controls|TextAutoSize {
+			linkColor:#185fc0;
+		}
+		controls|TextLink {
+			fontWeight:bold;
+			rollOverColor:#0000ff;
+			rollOverWeight:bold;
+			underlineOnRollOver:false;
+			focusSkin:ClassReference("com.flexcapacitor.skins.DottedFocusRect");
+		}
+		s|VScrollBar {
+			trackColors: #F5F5F5, #F5F5F5;
+			themeColor: #AAAAAA;
+		}
+		.scrollerBackground {
+			background-image:Embed(source="/images/Aqua_Graphite.jpg");
+			background-size:"100%";
+		}
+		.groupBackground {	
+			background-color:#ffffff;
+		}
+		.headerStyle {
+			font-weight:bold;
+			font-size:36;
+			underlineOnRollOver:false;
+		}
+		.postTitle {
+			font-size:16;
+			font-weight:bold;
+			color:#555555;
+		}
+		.postDateCreated {
+			font-weight:bold;
+			color:#777777;
+		}
+	</fx:Style>
+		
+	<s:states>
+		<s:State name="home"/>
+		<s:State name="products"/>
+		<s:State name="services"/>
+		<s:State name="contact"/>
+		<s:State name="about"/>
+	</s:states>
+	
+	<fx:Declarations>
+	
+	<managers:LinkManager debug="true" projectName="ACME Inc." isTitleBeforeProjectName="true"
+						  showBusyCursorDuringHandlers="false" useBrowserScrollbars="false"
+						  showPreloaderDuringHandlers="true" 
+						  id="linkManager">
+		
+		<managers:stateOptions>
+			<vo:StateOption stateName="about" displayName="About"/>
+			<vo:StateOption stateName="contact" displayName="Contact Us"/>
+			<vo:StateOption stateName="products" displayName="Our Products"/>
+			<vo:StateOption stateName="services" displayName="Our Services"/>
+			<vo:StateOption stateName="news" displayName="News"/>
+		</managers:stateOptions>
+		<!--
+		<managers:handlers>
+			
+			<handlers:StateHandler state="news" runOnEveryClick="true">
+				<handlers:actions>
+					<actions:CallMethod target="{content1}" name="send" debug="true" occurs="before" continueAfterEvent="result"/>
+				</handlers:actions>
+			</handlers:StateHandler>
+			
+			<handlers:ParameterHandler id="postHandler1" debug="true"
+									   parameter="id" isNotBlank="true" runAtStartup="true">
+				<handlers:actions>
+					<actions:CallMethod target="{postContent1}" name="send" occurs="before" continueAfterEvent="result">
+						<actions:arguments>
+							<fx:Array>
+								<fx:Object>
+									<fx:xml>1</fx:xml>
+									<fx:p>{postHandler1.value}</fx:p>
+								</fx:Object>
+							</fx:Array>
+						</actions:arguments>
+					</actions:CallMethod>
+				</handlers:actions>
+			</handlers:ParameterHandler>
+			
+		</managers:handlers>-->
+	</managers:LinkManager>
+	
+	
+	<managers:ContextMenuManager />
+	
+	<managers:MouseWheelManager id="mouse1" enabled="true" />
+	
+	<managers:ImageDragManager />
+	
+	<s:Fade id="fadeOut1" alphaFrom="1" alphaTo="0" />
+	<s:Fade id="fadeIn1" alphaFrom="0" alphaTo="1" />
+	
+	</fx:Declarations>
+	
+	<s:Scroller id="scroller1" width="100%" height="100%" 
+				tabFocusEnabled="false" styleName="scrollerBackground">
+		<s:Group id="mainGroup1" maintainProjectionCenter="true" styleName="groupBackground" >
+			<s:VGroup width="650" horizontalCenter="0" id="mainContainer">
+				<mx:Spacer height="15"/>
+				<s:BorderContainer width="100%" minHeight="300" id="canvas5" dropShadowVisible="true" cornerRadius="12">
+					<s:layout>
+						<s:BasicLayout />
+					</s:layout>
+					
+					<controls:ImageLink x="18" y="20" source="images/acme_logo.png" hyperlink="home" toolTip="Home"/>
+					<mx:SWFLoader id="spinLoader" source="@Embed('images/spinning_loader1.swf')" width="16" height="16" y="20" 
+								  hideEffect="{fadeOut1}" showEffect="{fadeIn1}" autoLoad="true" x="612" visible="false"/>
+					
+					<s:HGroup x="17" y="68" id="hbox1" styleName="backgroundStyle">
+						<controls:TextLink text="Home" id="homeLink1" hyperlink="home" toolTip="Home" />
+						<controls:TextLink text="Products" id="productsLink1" hyperlink="products" toolTip="Products"/>
+						<controls:TextLink text="Services" id="servicesLink1" hyperlink="services" toolTip="Services"/>
+						<controls:TextLink text="Contact Us" id="contactUsLink1" hyperlink="contact" toolTip="Contact Us"/>
+						<controls:TextLink text="About" id="aboutLink1" hyperlink="about" toolTip="About"/>
+					</s:HGroup>
+					<mx:Text y="64" id="text1" fontWeight="bold" text="base" fontSize="14" color="#555555" right="20"  text.home="HOME" text.products="PRODUCTS" text.services="SERVICES" text.contact="CONTACT" text.about="ABOUT" />
+					<s:VGroup y="95" id="vbox1" left="10" right="20" >
+						<s:HGroup width="100%" id="contentBox1" minHeight="400">
+							<controls:TextAutoSize includeIn="home" width="100%" source="content/welcome.txt"/>
+							<controls:TextAutoSize includeIn="about" width="100%" source="content/about.txt"/>
+							<controls:TextAutoSize includeIn="contact" width="100%" source="content/contact.txt"/>
+							<controls:TextAutoSize includeIn="products" width="100%" source="content/products.xml"/>
+							<controls:TextAutoSize includeIn="services" width="100%" source="content/services.txt"/>
+						</s:HGroup>
+						<s:VGroup width="100%" horizontalAlign="center" >
+							<mx:Spacer height="20"/>
+							<controls:TextLink text="Copyright 2012 ACME Inc - Built with Flex Capacitor Link Manager" 
+									 fontWeight="bold" 
+									 fontSize="11" 
+									 fontFamily="Arial" 
+									 color="#555555"
+									 hyperlink="https://github.com/monkeypunch3/LinkManager"/>
+							<mx:Spacer height="10"/>
+						</s:VGroup>
+					</s:VGroup>
+				</s:BorderContainer>
+				<mx:Spacer height="15"/>
+			</s:VGroup>
+		</s:Group>
+	</s:Scroller>
+	
+</s:Application>
