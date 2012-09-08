@@ -1,0 +1,727 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:controls="com.flexcapacitor.controls.*"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 creationComplete="group1_creationCompleteHandler(event)">
+
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+	</fx:Style>
+
+	<!---  XML VALIDATION METHODS -->
+	<fx:Script>
+		<![CDATA[
+			import com.flexcapacitor.utils.XMLUtils;
+			
+			import flash.net.navigateToURL;
+			import flash.utils.setTimeout;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.FlexMouseEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.URLUtil;
+			
+			import spark.components.TextSelectionHighlighting;
+
+			public var xmlDeclarationExpression:RegExp = /((<\?xml.*?\?>\s*)(\s*|.*)(<!--\s?[^<]*?-->\s*)*)/i;
+			
+			[Bindable]
+			public var autoSetup:Boolean = true;
+
+			[Bindable]
+			public var row:int;
+
+			[Bindable]
+			public var column:int;
+			
+			[Bindable]
+			public var tabStops:String;
+			
+			[Bindable]
+			public var showEscapeButton:Boolean = true;
+			
+			[Bindable]
+			public var showUnescapeButton:Boolean = true;
+			
+			[Bindable]
+			public var showAddRootButton:Boolean = true;
+			
+			[Bindable]
+			public var showFormatParameters:Boolean = false;
+			
+			[Bindable]
+			public var showFormatButton:Boolean = true;
+			
+			[Bindable]
+			public var showClearButton:Boolean = true;
+			
+			[Bindable]
+			public var showValidateButton:Boolean = true;
+			
+			[Bindable]
+			public var showHelpButton:Boolean = true;
+
+			[Bindable]
+			public var showURLTextInput:Boolean = true;
+
+			public var NORMAL_INTERVAL:int = 3000;
+
+			public var testURL1:String = "http://www.w3schools.com/xml/note.xml";
+			public var testURL2:String = "http://www.w3schools.com/xml/note_error.xml";
+			
+			[Bindable]
+			[Inspectable(format="String",enumeration="above,below")]
+			public function set controlBarPosition(value:String):void {
+				_controlBarPosition = value;
+				invalidateDisplayList();
+			}
+			
+			public function get controlBarPosition():String {
+				return _controlBarPosition;
+			}
+			private var _controlBarPosition:String = "below";
+			
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+			{
+				/* 
+				if (controlBarPosition=="below") {
+					
+					if (mainGroup.contains(controlBarGroup) && mainGroup.getElementIndex(controlBarGroup)!=1) {
+						controlBarPosition = "below";
+						mainGroup.removeElement(controlBarGroup);
+						mainGroup.addElementAt(controlBarGroup, 1);
+					}
+					if (rowAndColumnText && footer.contains(rowAndColumnText)) {
+						footer.removeElement(rowAndColumnText);
+						controls.addElementAt(rowAndColumnText, 0);
+					}
+					if (rowAndColumnText && footer.contains(helpButton)) {
+						footer.removeElement(helpButton);
+						controls.addElementAt(helpButton, controls.numElements);
+					}
+				}
+				else {
+					if (mainGroup.getElementIndex(controlBarGroup)!=0) {
+						controlBarPosition = "above";
+						mainGroup.removeElement(controlBarGroup);
+						mainGroup.addElementAt(controlBarGroup, 0);
+					}
+					if (rowAndColumnText) {
+						controls.removeElement(rowAndColumnText);
+						footer.addElementAt(rowAndColumnText, 0);
+					}
+					if (rowAndColumnText && footer.contains(helpButton)) {
+						controls.removeElement(helpButton);
+						footer.addElementAt(helpButton, controls.numElements);
+					}
+				} */
+				
+				
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+			}
+			
+			
+			[Bindable]
+			public var proxy:String = "proxy.php?url=";
+			[Bindable]
+			public var useProxy:Boolean = true;
+
+			/**
+			 * This text has a Byte-Order-Marker (FEFF or \uFEFF). This character is not visually displayed
+			 * in many text editors. This will break many XML parsers since no characters are allowed
+			 * before the XML declaration.
+			 * Some editors such as Windows Notepad automatically insert the BOM in UTF-8 files.
+			 * Use a different editor to save your files (one that does not insert a BOM)
+			 * or strip it out before passing it to the XML parser.
+			 * Tip: RexExp /\uFEFF/
+			 * https://secure.wikimedia.org/wikipedia/en/wiki/Byte_Order_Mark
+			 * */
+			[Bindable]
+			public var hasMarker:Boolean;
+			[Bindable]
+			public var byteMarkerType:String;
+
+			private var _text:String;
+			private var _originalValue:*;
+			private var _addedToPage:Boolean;
+
+			public function get originalValue():* {
+				return _originalValue;
+			}
+
+			[Bindable]
+			private var lastResult:String = "";
+
+			public var defaultDeclaration:String = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+
+			public function get text():String {
+				return xmlTextArea.text;
+			}
+
+			public function set text(value:*):void {
+				clear();
+				currentState = "normal";
+				_originalValue = value;
+				_text = value as String;
+				xmlTextArea.text = _text;
+				resetRowAndColumn();
+				if (validateOnSet) {
+					validate(value);
+				}
+			}
+			
+			[Bindable]
+			public var validateOnSet:Boolean = true;
+
+			protected function submit_clickHandler(event:MouseEvent=null):void {
+				apiService.url = URL.text;
+				apiService.send();
+			}
+
+			protected function escape_clickHandler(event:MouseEvent):void {
+				xmlTextArea.text = escape(xmlTextArea.text);
+			}
+
+			protected function unescape_clickHandler(event:MouseEvent):void {
+				xmlTextArea.text = unescape(xmlTextArea.text);
+			}
+
+			/**
+			 * Injects the browser with the javascript used to check the value
+			 * Must be called before javascript validation will work
+			 * */
+			public function setup():void {
+				ExternalInterface.addCallback("universalCallback", universalCallback);
+				callLater(runScript);
+			}
+
+			private function runScript():void {
+				ExternalInterface.call("eval", browserXMLValidationScript);
+				_addedToPage = true;
+			}
+
+			private function universalCallback(... rest):void {
+				lastResult = String(rest[0]);
+			}
+
+			/**
+			 * Adds a tag around the XML in the text area. This is very basic function
+			 * Does not add or check for XML declaration
+			 * */
+			public function addRootTag(nodeName:String = "root"):void {
+				var xml:String = xmlTextArea.text;
+				var isValid:Boolean;
+				var declaration:String = getDeclaration(xml);
+
+				xml = removeDeclaration(xml);
+
+				xml = declaration + "<" + nodeName + ">\n" + xml + "\n</" + nodeName + ">";
+
+				xmlTextArea.text = xml;
+				validate();
+			}
+
+			/**
+			 * Gets the XML declaration
+			 * */
+			public function getDeclaration(xml:*):String {
+				var match:Array = xml.match(xmlDeclarationExpression);
+				var declaration:String;
+
+				declaration = match ? match[0] : "";
+				return declaration;
+			}
+
+			/**
+			 * Gets the XML without declaration
+			 * */
+			public function removeDeclaration(xml:*):String {
+				var match:Array = xml.match(xmlDeclarationExpression);
+				xml = match ? xml.substr(match[0].length) : xml;
+
+				return xml;
+			}
+			
+			/**
+			 * Attempts to format the XML in the text area
+			 * */
+			public function formatXML():void {
+				var xml:String = xmlTextArea.text;
+				var isValidXML:Boolean = isValidXML(xml);
+				var declaration:String = getDeclaration(xml);
+				
+				if (isValidXML) {
+					xmlTextArea.text = declaration + new XML(xml).toXMLString();
+				}
+				else {
+					Alert.show("XML must be valid before formatting");
+				}
+			}
+			
+			/**
+			 * Attempts to format the URL parameters in the text area
+			 * */
+			public function formatParameters():void {
+				var urlExpression:RegExp = /(?:\/?([^;\?#]+))?(?:;([^\?#]+))?(?:\?([^#]+))?(?:#(.+))?/;
+				var parameters:String = xmlTextArea.text;
+				var match:Array = parameters.match(urlExpression);
+				var url:String = match.length>1 ? match[1] : "";
+				var query:String = match.length>3 ? match[3] : "";
+				var fragment:String = match.length>4 ? match[4] : "";
+				var parametersList:Object = query ? URLUtil.stringToObject(query, "&", true) : null;
+				var fragmentList:Object = fragment ? URLUtil.stringToObject(fragment, ";", true) : null;
+				var placeHolder:Object = {};
+				
+				for (var property:String in parametersList) {
+					placeHolder[property+"\t"] = parametersList[property];
+				}
+				parametersList = placeHolder;
+				placeHolder = {};
+				
+				for (property in fragmentList) {
+					placeHolder[property+"\t"] = fragmentList[property];
+				}
+				fragmentList = placeHolder;
+				
+				var formatted:String = parametersList ? "Parameters:\n" + URLUtil.objectToString(parametersList, "\n", false) : "";
+				formatted += fragmentList ? "\n\nFragment:\n" + URLUtil.objectToString(fragmentList, "\n", false) : "";
+				
+				if (query || fragment) {
+					xmlTextArea.text = formatted + "\n\n\n" + parameters;
+				}
+			}
+			
+			/**
+			 * Clears the text area out without running validation on it and 
+			 * sets the state back to normal (no error console)
+			 * */
+			public function clear():void {
+				xmlTextArea.text = "";
+				currentState = "normal";
+				if (markerLabel) markerLabel.visible = markerLabel.includeInLayout = false;
+				resetRowAndColumn();
+			}
+
+			/**
+			 * Validates the value passed in.
+			 * Type is not cast to be able to check for byte markers
+			 * */
+			public function validate(value:* = null):Boolean {
+				(!_addedToPage) ? setup() : null;
+				var xml:String = value != null ? value : xmlTextArea.text;
+				var hasMarker:Boolean = XMLUtils.hasByteOrderMarker(value);
+				var validationResult:String = ExternalInterface.call("validateXML", xml);
+				var characterCount:int;
+				var isMozilla:Boolean;
+				var isChrome:Boolean;
+				var lastLine:String;
+				var isValid:Boolean;
+				var matchIndex:int;
+				var results:Array;
+				var lines:Array;
+
+				if (hasMarker) {
+					byteMarkerType = XMLUtils.getByteOrderMarkerType(xml);
+					currentState = "invalid";
+				}
+				else {
+					byteMarkerType = "";
+				}
+
+				if (validationResult) {
+					isMozilla = (validationResult.indexOf("XML Parsing Error:") != -1);
+					isChrome = (validationResult.indexOf("This page contains the following errors:") != -1);
+				}
+
+				// error - xml is not valid
+				if (isChrome || isMozilla) {
+
+					// get row and column
+					if (isMozilla) {
+						results = validationResult.match(/Line\s+Number\s+(\d+),\s+Column\s+(\d+):/i);
+						row = results.length > 1 ? results[1] : 0;
+						column = results.length > 2 ? results[2] : 0;
+					}
+					else if (isChrome) {
+						results = validationResult.match(/line\s+(\d+)\s+at\s+column\s+(\d+):/i);
+						row = results.length > 1 ? results[1] : 0;
+						column = results.length > 2 ? results[2] : 0;
+
+					}
+
+					currentState = "invalid";
+
+					validationResult = String(validationResult).replace(/Location:.*/g, "");
+
+					errorMessage.text = String(validationResult);
+
+					lines = xml.split("\n");
+					lastLine = xml;
+					characterCount = column;
+
+					if (row < lines.length) {
+						for (var i:int; i < row; i++) {
+							characterCount += lines[i].length - 1;
+							lastLine = lines[i];
+						}
+						var len:int = xml.length;
+						xmlTextArea.text = xml;
+						matchIndex = xmlTextArea.text.search(lastLine);
+						xmlTextArea.selectRange(matchIndex + column - row, xmlTextArea.text.length);
+
+					}
+
+					try {
+						if (xml != null) {
+							xml = new XML(xml as String);
+						}
+					}
+					catch (error:TypeError) {
+						errorMessage.text += "\n" + error.message;
+					}
+					finally {
+
+					}
+
+				}
+				else if (validationResult && validationResult.indexOf("No errors found") != -1) {
+					currentState = "valid";
+					isValid = true;
+					setTimeout(clearValidMessage, NORMAL_INTERVAL);
+				}
+				else {
+					currentState = "invalid";
+					errorMessage.text = String(validationResult);
+
+				}
+
+				if (markerLabel) {
+					markerLabel.visible = markerLabel.includeInLayout = hasMarker;
+					markerLabel.text = "Has " + byteMarkerType;
+				}
+
+				resetRowAndColumn();
+
+				return isValid;
+
+			}
+
+			/**
+			 * Goes to the normal state
+			 * */
+			public function goToNormal():void {
+				currentState = "normal";
+			}
+
+			/**
+			 * Clears the valid message
+			 * */
+			public function clearValidMessage():void {
+				if (currentState=="valid") {
+					currentState = "normal";
+				}
+			}
+
+			/**
+			 * Deselects the text in the XML text area
+			 * */
+			public function reset():void {
+				deselect();
+			}
+
+			/**
+			 * Deselects the text in the XML text area
+			 * */
+			public function deselect():void {
+				xmlTextArea.selectRange(0, 0);
+			}
+
+			/**
+			 * Constant representing a element type returned from XML.nodeKind.
+			 *
+			 * @see XML.nodeKind()
+			 *
+			 * @langversion ActionScript 3.0
+			 * @playerversion Flash 9.0
+			 */
+			public static const ELEMENT:String = "element";
+
+			/**
+			 * Checks whether the specified string is valid and well formed XML.
+			 *
+			 * @param data The string that is being checked to see if it is valid XML.
+			 *
+			 * @return A Boolean value indicating whether the specified string is
+			 * valid XML.
+			 *
+			 * @langversion ActionScript 3.0
+			 * @playerversion Flash 9.0
+			 */
+			public function isValidXML(data:String):Boolean {
+				var xml:XML;
+
+				try {
+					xml = new XML(data);
+				}
+				catch (e:Error) {
+					return false;
+				}
+
+				if (xml.nodeKind() != ELEMENT) {
+					return false;
+				}
+
+				return true;
+			}
+
+			protected function markerLabel_clickHandler(event:MouseEvent):void {
+				var alertTitle:String = "Has 0 Byte Order Marker".replace("0", byteMarkerType);
+				var alert:Alert = Alert.show(markerNote, alertTitle, Alert.NO | Alert.YES, null, markerHandler);
+			}
+
+			protected function markerHandler(event:CloseEvent):void {
+				if (event.detail==Alert.YES) {
+					navigateToURL(new URLRequest("https://secure.wikimedia.org/wikipedia/en/wiki/Byte_Order_Mark"), "_blank");
+					navigateToURL(new URLRequest("http://htmlpurifier.org/docs/enduser-utf8.html"), "_blank");
+				}
+			}
+
+			protected function apiService_resultHandler(event:ResultEvent):void {
+				text = event.result as String;
+			}
+
+			protected function apiService_faultHandler(event:FaultEvent):void {
+				text = event.fault.message;
+			}
+
+			protected function xmlTextArea_selectionChangeHandler(event:FlexEvent):void {
+				getRowAndColumn();
+			}
+
+			public function getRowAndColumn():void {
+				var position:int = xmlTextArea.selectionActivePosition;
+				var text:String = xmlTextArea.text;
+				var textBeforeCarrot:String = text.substr(0, position);
+				var lineCount:int;
+				var lines:Array;
+
+				lines = textBeforeCarrot.split("\n"); // should we check for \r
+				lineCount = lines.length;
+				column = lineCount ? String(lines[lineCount - 1]).length + 1 : 1;
+				row = lineCount;
+			}
+
+			public function resetRowAndColumn():void {
+				column = 0;
+				row = 0;
+			}
+
+			protected function help_mouseDownOutsideHandler(event:FlexMouseEvent):void {
+				currentState = "normal";
+			}
+
+			private function showHelp():void {
+				currentState = (currentState != "help") ? "help" : "normal";
+			}
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void {
+				if (autoSetup) {
+					setup();
+				}
+			}
+			
+			protected function formatParameters_clickHandler(event:MouseEvent):void {
+				formatParameters();
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!--- Javascript Validation Code stolen from W3C Validator -->
+		<!--- This is written to the HTML page on load -->
+		<!--- Note: wherever we have linebreaks we have to escape them - \n -> \\n-->
+		<!--- TODO: I want to put this in a separate file -->
+		<fx:String id="browserXMLValidationScript">
+			<![CDATA[
+			var xt = "";
+			var h3OK = 1;
+			
+			function checkErrorXML(x) {
+				xt = ""
+				h3OK = 1
+				checkXML(x)
+			}
+			
+			function checkXML(n) {
+				var l;
+				var i;
+				var nam;
+				nam = n.nodeName;
+			
+				if (nam=="h3") {
+					if (h3OK==0) {
+						return;
+					}
+					h3OK = 0;
+				}
+			
+				if (nam == "#text") {
+					xt = xt + n.nodeValue + "\\n";
+				}
+			
+				l = n.childNodes.length
+			
+				for (i = 0; i < l; i++) {
+					checkXML(n.childNodes[i])
+				}
+			
+			}
+			
+			function validateXML(txt) {
+			
+				// code for IE
+				if (window.ActiveXObject) {
+					var xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+					xmlDoc.async = "false";
+					xmlDoc.loadXML(txt);
+					
+					if (xmlDoc.parseError.errorCode != 0) {
+						txt = "Error Code: " + xmlDoc.parseError.errorCode + "\\n";
+						txt = txt + "Error Reason: " + xmlDoc.parseError.reason;
+						txt = txt + "Error Line: " + xmlDoc.parseError.line;
+						return txt;
+					}
+					else {
+						return "No errors found";
+					}
+				}
+			
+				// code for Mozilla, Firefox, Opera, etc.
+				else if (document.implementation.createDocument) {
+					var parser = new DOMParser();
+					var text = txt;
+					var xmlDoc = parser.parseFromString(text, "text/xml");
+				
+					if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+						checkErrorXML(xmlDoc.getElementsByTagName("parsererror")[0]);
+						return xt;
+					}
+					else {
+						return "No errors found";
+					}
+				}
+				else {
+					return "Your browser cannot handle the truth. I mean XML validation";
+				}
+			}
+			]]>
+		</fx:String>
+
+		<fx:String id="markerNote">
+			<![CDATA[This text contains a byte order marker. The byte order mark is a Unicode character used to signal the endianness (byte order) of a text file or stream. Some editors, such as Windows Notepad, insert a byte marker at the beginning of the file when the file is initially saved.
+
+These markers are not allowed before the XML declaration and cause validation to fail.
+
+To fix: Create and save a new file (xml, php, text, etc) using an editor that does not insert a byte order marker. Check that the file size (when empty) is 0 bytes and copy in the original file contents. More info...]]>
+		</fx:String>
+		
+		<s:HTTPService id="apiService"
+					   fault="apiService_faultHandler(event)" method="GET"
+					   result="apiService_resultHandler(event)" resultFormat="text"
+					   useProxy="{useProxy}"/>
+	</fx:Declarations>
+
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="valid"/>
+		<s:State name="invalid"/>
+		<s:State name="help"/>
+	</s:states>
+
+	<s:VGroup id="mainGroup" height="100%" width="100%">
+		<s:TextArea id="xmlTextArea" tabStops="{tabStops}"
+					height="100%" styleName="highlightcolors" width="100%"
+					selectionChange="xmlTextArea_selectionChangeHandler(event)"
+					selectionHighlighting="{TextSelectionHighlighting.ALWAYS}"
+					skinClass="com.flexcapacitor.skins.TextAreaLineNumbersSkin"/>
+		
+		
+		<s:TextArea id="errorMessage"
+					fontFamily="Courier New"
+					height="50%" width="100%"
+					includeIn="invalid"
+					skinClass="com.flexcapacitor.skins.TextAreaLineNumbersSkin"/>
+		
+		<s:HGroup id="controls"
+				  verticalAlign="middle"
+				  width="100%">
+
+			<s:RichText id="rowAndColumnText" color="#A1A1A1" text="Row: {row}   Column: {column}"/>
+			<s:HGroup verticalAlign="middle" width="100%" visible="{showURLTextInput}">
+				<s:TextInput id="URL"
+										  width="100%" enter="submit_clickHandler()"
+										  prompt="URL Address"/>
+				<s:Button label="Submit" click="submit_clickHandler(event)"/>
+			</s:HGroup>
+			<s:RichText id="validXMLText" width="80" fontWeight="bold"
+						color.invalid="#FF0000" text.invalid="Invalid XML"
+						text.normal="    "
+						color.valid="#00FF00" text.valid="Valid XML"/>
+			<s:Label id="markerLabel" paddingLeft="5" paddingRight="5"
+					 color="#FF0000" fontWeight="bold" includeInLayout="false"
+					 buttonMode="true" mouseChildren="false" text="Has Byte Order Marker"
+					 useHandCursor="true" visible="false"
+					 includeIn="invalid"
+					 click="markerLabel_clickHandler(event)"/>
+			<s:Button label="Escape" click="escape_clickHandler(event)" visible="{showEscapeButton}" includeInLayout="{showEscapeButton}" />
+			<s:Button label="Unescape" click="unescape_clickHandler(event)" visible="{showUnescapeButton}" includeInLayout="{showUnescapeButton}" />
+			<s:Button label="Add Root Tag" click="addRootTag()" visible="{showAddRootButton}" includeInLayout="{showAddRootButton}" />
+			<s:Button label="Format" click="formatXML()" visible="{showFormatButton}" includeInLayout="{showFormatButton}" />
+			<s:Button label="Format Parameters" click="formatParameters_clickHandler(event)" visible="{showFormatParameters}" includeInLayout="{showFormatParameters}" />
+			<s:Button label="Clear" click="clear()" visible="{showClearButton}" includeInLayout="{showClearButton}" />
+			<s:Button label="Validate" click="validate()" visible="{showValidateButton}" includeInLayout="{showValidateButton}" />
+			<s:Label id="helpButton" visible="{showHelpButton}" includeInLayout="{showHelpButton}" buttonMode="true" click="showHelp()"
+					 text="help" useHandCursor="true"/>
+		</s:HGroup>
+
+	</s:VGroup>
+
+	<s:BorderContainer id="help"
+					   backgroundAlpha="0.9" backgroundColor="#FFFFFF"
+					   horizontalCenter="0" visible="false" visible.help="true" verticalCenter="0"
+					   height="200" width="370" 
+					   click="goToNormal()"
+					   mouseDownOutside="help_mouseDownOutsideHandler(event)">
+		<s:Label left="40"
+				 text="To validate XML" y="10"/>
+		<s:Label left="40" right="40"
+				 y="36">
+			<s:text>
+				<![CDATA[• To validate XML copy and paste your XML into the text box and press Validate XML
+
+• You can also validate XML from a remote server. Enter the URL and press Get URL. Results will show up in the box
+
+• If the XML is invalid the start of the error will be highlighted and a text area will appear containing both the error message from the browser XML parser and the AS3 XML parser]]>
+			</s:text>
+		</s:Label>
+	</s:BorderContainer>
+
+	<s:transitions>
+		<s:Transition autoReverse="true" fromState="*" toState="help">
+			<s:Parallel target="{help}">
+				<s:Move autoCenterTransform="true" duration="500" startDelay="0"/>
+			</s:Parallel>
+		</s:Transition>
+		<s:Transition autoReverse="true" fromState="help" toState="*">
+			<s:Parallel target="{help}">
+				<s:Move autoCenterTransform="true" duration="500" startDelay="0"/>
+			</s:Parallel>
+		</s:Transition>
+	</s:transitions>
+</s:Group>

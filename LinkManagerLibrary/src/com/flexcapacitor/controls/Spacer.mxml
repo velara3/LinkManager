@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Container xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" 
+	updateComplete="init()" 
+	rollOver="rollOverHandler(event)"
+	rollOut="rollOutHandler(event)"
+	click="clickHandler(event)"
+	useHandCursor="true">
+	<mx:Script>
+		<![CDATA[
+			import mx.containers.HBox;
+			import mx.controls.Text;
+			import mx.core.UIComponent;
+			
+			[Bindable]
+			public var debugSpacer:Boolean = false;
+			public var layoutLine:LayoutLines;
+			public var highlightAlpha:Number = 0.05;
+			public var toggleOn:Boolean = false;
+			public var linesVisible:Boolean = false;
+			public var textField:Text = new Text();
+			
+			public function init():void {
+				
+				if (debugSpacer) {
+					setStyle("backgroundColor", "black"); 
+					setStyle("backgroundAlpha", 0.08);
+					var tf:Text = textField;
+					tf.text = (id!=null) ? "spacer:" + id : "spacer";
+					tf.setStyle("color", 0x666666);
+					tf.setStyle("fontSize", 9);
+					tf.setStyle("fontWeight","bold");
+					
+		            tf.width = 150;
+		            tf.height = 18;
+					tf.x = 0;
+					tf.y = 0;
+		            
+					//tf.defaultTextFormat = format;
+					if (tf.stage==null) {
+						addChild(tf);
+					}
+					
+					tf.invalidateDisplayList();
+					tf.validateNow();
+					
+					var fillHeight:uint = (height < 16) ? height : 16;
+					var lineColor:uint = 0x333333;
+					
+					tf.graphics.clear();
+					
+					// adds a thin black line at the top of the spacer
+					tf.graphics.beginFill(lineColor,.5);
+					tf.graphics.drawRect(-5,0,width + 10,1);
+					tf.graphics.endFill();
+					
+					// adds a thin black line at the bottom of the spacer
+					tf.graphics.beginFill(lineColor,.5);
+					tf.graphics.drawRect(-5,height-1,width+10,1);
+					tf.graphics.endFill();
+					
+					// adds a thin black line at the left of the spacer
+					tf.graphics.beginFill(lineColor,.5);
+					tf.graphics.drawRect(0,-5,1,height + 10);
+					tf.graphics.endFill();
+					
+					// adds a thin black line at the right of the spacer
+					tf.graphics.beginFill(lineColor,.5);
+					tf.graphics.drawRect(width-1,-5,1,height + 10);
+					tf.graphics.endFill();
+					
+					// adds a rounded rectangle stroke to the text field background
+					tf.graphics.beginFill(0x999999,.7);
+					tf.graphics.drawRoundRectComplex(1,1,tf.width+1,fillHeight+1,0,0,0,6);
+					tf.graphics.endFill();
+					
+					// adds a rounded rectangle to the text field background
+					tf.graphics.beginFill(0xffffff,.8);
+					tf.graphics.drawRoundRectComplex(1,1,tf.width,fillHeight,0,0,0,6);
+					tf.graphics.endFill();
+		  		}
+		  		
+			}
+			
+			private function clickHandler(event:MouseEvent):void {
+				toggleOn = !toggleOn;
+				
+				if (toggleOn) {
+					showLines();
+				}
+				else {
+					hideLines();
+				}
+			}
+			
+			private function rollOverHandler(event:MouseEvent):void {
+				showLines();
+			}
+			
+	  		private function rollOutHandler(event:MouseEvent):void {
+				if (!toggleOn) {
+					hideLines();
+				}
+	  		}
+			
+			public function showLines():void {
+				
+				if (linesVisible) return;
+				
+				if (!debugSpacer) return;
+				
+				var index:uint = this.parent.getChildIndex(this);
+				var prevIndex:int = index-1;
+				var nextIndex:int = index+1;
+				var childrenLength:int = UIComponent(this.parent).numChildren;
+				var prev:* = (prevIndex > -1 && prevIndex < childrenLength) ? this.parent.getChildAt(prevIndex): null;
+				var next:* = (nextIndex > -1 && nextIndex < childrenLength) ? this.parent.getChildAt(nextIndex): null;
+				layoutLine = new LayoutLines();
+				
+				if (prev) {
+					UIComponent(prev).graphics.clear();
+					layoutLine.width = UIComponent(prev).width;
+					layoutLine.height = UIComponent(prev).height;
+					if (prev is HBox) {
+						layoutLine.drawLines(prev);
+					}
+					else {
+						layoutLine.drawLines(prev);
+					}
+					// adds a rounded rectangle to the text field background
+					UIComponent(prev).graphics.beginFill(0x0000ff,highlightAlpha);
+					UIComponent(prev).graphics.drawRoundRectComplex(0,0,UIComponent(prev).width,UIComponent(prev).height,0,0,0,0);
+					UIComponent(prev).graphics.endFill();
+				}
+				if (next) {
+					UIComponent(next).graphics.clear();
+					layoutLine.width = UIComponent(next).width;
+					layoutLine.height = UIComponent(next).height;
+					if (next is HBox) {
+						layoutLine.drawLines(next);
+					}
+					else {
+						layoutLine.drawLines(next);
+					}
+					// adds a rounded rectangle to the text field background
+					UIComponent(next).graphics.beginFill(0x0000ff,highlightAlpha);
+					UIComponent(next).graphics.drawRoundRectComplex(0,0,UIComponent(next).width,UIComponent(next).height,0,0,0,0);
+					UIComponent(next).graphics.endFill();
+				}
+				
+				linesVisible = true;
+			}
+			
+			public function hideLines():void {
+				
+				if (!debugSpacer) return;
+				
+				var index:uint = this.parent.getChildIndex(this);
+				var prevIndex:int = index-1;
+				var nextIndex:int = index+1;
+				var childrenLength:int = UIComponent(this.parent).numChildren;
+				var prev:* = (prevIndex > -1 && prevIndex < childrenLength) ? this.parent.getChildAt(prevIndex): null;
+				var next:* = (nextIndex > -1 && nextIndex < childrenLength) ? this.parent.getChildAt(nextIndex): null;
+				
+				if (prev) {
+					UIComponent(prev).graphics.clear();
+				}
+				if (next) {
+					UIComponent(next).graphics.clear();
+				}
+				
+				linesVisible = false;
+			}
+
+		]]>
+	</mx:Script>
+	
+</mx:Container>

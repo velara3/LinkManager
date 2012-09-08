@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:List xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:mx="library://ns.adobe.com/flex/mx" width="200" height="200"
+		dataProvider="{filteredAPICollection}" labelField="@name"
+		change="apiList_changeHandler(event)"
+		keyDown="apiList_keyDownHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.IList;
+			import mx.collections.Sort;
+			import mx.collections.SortField;
+			import mx.collections.XMLListCollection;
+			import mx.core.ITextInput;
+			
+			import spark.components.TextInput;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			private var _target:TextInput;
+			
+			public function get target():TextInput
+			{
+				return _target;
+			}
+
+			public function set target(value:TextInput):void {
+				if (value==_target) return // no flop
+				_target = value;
+				_target.addEventListener(TextOperationEvent.CHANGE, searchInput_changeHandler, false, 0, true);
+				_target.addEventListener(KeyboardEvent.KEY_DOWN, searchInput_keyDownHandler, false, 0, true);
+			}
+
+			protected function searchInput_changeHandler(event:TextOperationEvent):void {
+				filteredAPICollection.refresh();
+			}
+			
+			protected function searchInput_keyDownHandler(event:KeyboardEvent):void {
+				if (event.keyCode == Keyboard.DOWN) {
+					setFocus();
+				}
+				else if (event.keyCode == Keyboard.ENTER) {
+					focusManager.setFocus(focusManager.getNextFocusManagerComponent());
+				}
+			}
+			
+			protected function apiList_keyDownHandler(event:KeyboardEvent):void {
+				if (event.keyCode == Keyboard.ENTER) {
+					focusManager.setFocus(focusManager.getNextFocusManagerComponent());
+				}
+			}
+			
+			protected function apiList_changeHandler(event:IndexChangeEvent):void {
+				if (selectedIndex != -1) {
+					//target.text = selectedItem.@name;
+				}
+			}
+			
+			private var _dataProviderProperties:XMLListCollection = new XMLListCollection(new XMLList());
+			
+			/**
+			 * Accepts XMLListCollection. Set to "new XMLListCollection(new XMLList())"
+			 * Default sort is on the "@name" field.
+			 * */
+			override public function set dataProvider(value:IList):void {
+				super.dataProvider = filteredAPICollection;
+				filteredAPICollection.list = value;
+				
+				if (value && value is XMLListCollection) {
+					XMLListCollection(value).sort = _sort;
+				}
+				
+			}
+			
+			// this sets the sort and default sort field. i know what your thinking... "wtf?" me too! and i wrote it!!!
+			private var _sort:Sort = (_sort = new Sort()) ? (_sort.fields = [ new SortField("@name", true)]) ? _sort : _sort : _sort;
+			
+			public function get sort():Sort {
+				return _sort;
+			}
+			
+			[Bindable]
+			public function set sort(value:Sort):void {
+				_sort = value;
+				if (dataProvider && dataProvider is XMLListCollection) {
+					XMLListCollection(dataProvider).sort = value;
+				}
+			}
+
+			
+			/**
+			 *
+			 * */
+			protected function filterPropertyChangeHandler(item:XML):Boolean {
+				var itemName:String = item.attribute("name") ? item.attribute("name") : "";
+				var value:String = target.text;
+				if (itemName.toLowerCase().indexOf(value) != -1) {
+					return true;
+				}
+				return false;
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<mx:ListCollectionView id="filteredAPICollection"
+							   filterFunction="filterPropertyChangeHandler"/>
+	</fx:Declarations>
+</s:List>

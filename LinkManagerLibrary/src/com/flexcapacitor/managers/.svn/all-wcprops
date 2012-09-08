@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/flexcapacitor/!svn/ver/460/trunk/library/src/com/flexcapacitor/managers
+END
+PositionManager.as
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/flexcapacitor/!svn/ver/295/trunk/library/src/com/flexcapacitor/managers/PositionManager.as
+END
+DraggableLabelManager.as
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/flexcapacitor/!svn/ver/19/trunk/library/src/com/flexcapacitor/managers/DraggableLabelManager.as
+END
+ContextMenuManager.as
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/flexcapacitor/!svn/ver/408/trunk/library/src/com/flexcapacitor/managers/ContextMenuManager.as
+END
+AnchorManager.as
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/flexcapacitor/!svn/ver/435/trunk/library/src/com/flexcapacitor/managers/AnchorManager.as
+END
+swfMouseWheel.js
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/flexcapacitor/!svn/ver/54/trunk/library/src/com/flexcapacitor/managers/swfMouseWheel.js
+END
+fcBookmark.js
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/flexcapacitor/!svn/ver/82/trunk/library/src/com/flexcapacitor/managers/fcBookmark.js
+END
+LinkManager.as
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/flexcapacitor/!svn/ver/460/trunk/library/src/com/flexcapacitor/managers/LinkManager.as
+END
+MouseWheelManager.as
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/flexcapacitor/!svn/ver/392/trunk/library/src/com/flexcapacitor/managers/MouseWheelManager.as
+END
+BehaviorManager.as
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/flexcapacitor/!svn/ver/106/trunk/library/src/com/flexcapacitor/managers/BehaviorManager.as
+END
+ImageDragManager.as
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/flexcapacitor/!svn/ver/404/trunk/library/src/com/flexcapacitor/managers/ImageDragManager.as
+END

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Image xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 skinClass="com.flexcapacitor.skins.ScaleImageSkin"
+		 buttonMode="true" mouseChildren="true"
+		 useHandCursor="true" smooth="true">
+	
+	<fx:Metadata>
+		/**
+		* Corner radius of the image
+		* */
+		[Style(name="cornerRadius", inherit="no", type="int")]
+		[Style(name="borderVisible", inherit="no", type="Boolean")]
+		[Style(name="pixelHinting", inherit="no", type="Boolean")]
+		[Style(name="borderCaps", inherit="no", type="String", enumeration="none,round,square")]
+		[Style(name="borderWeight", inherit="no", type="int")]
+		[Style(name="miterLimit", inherit="no", type="int")]
+		[Style(name="borderColor", inherit="no", type="Number")]
+		[Style(name="borderAlpha", inherit="no", type="Number")]
+		[Style(name="borderFit", inherit="no", type="String", enumeration="exact,none")]
+		[Style(name="borderJoints", inherit="no", type="String", enumeration="normal,none,horizontal,vertical")]
+		[Style(name="borderScaleMode", inherit="no", type="String", enumeration="none,square,round")]
+		[Style(name="scaleUpSmallerImages", inherit="no", type="Boolean")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import spark.core.ContentCache;
+			public static var FULL:String = "full";
+			public static var LETTERBOX:String = "letterbox";
+			public static var FIT_TO_HEIGHT:String = "fitToHeight";
+			public static var FIT_TO_WIDTH:String = "fitToWidth";
+			public static var STRETCH:String = "stretch";
+			public static var NONE:String = "none";
+			
+			private var _contentWidth:int;
+			
+			/**
+			 * Width of content after it has been scaled
+			 * */
+			[Bindable]
+			public function get contentWidth():int {
+				return _contentWidth;
+			}
+			public function set contentWidth(value:int):void {
+				_contentWidth = value;
+			}
+			
+			private var lastUpdate:int;
+			
+			private var _contentHeight:int;
+			
+			/**
+			 * Height of content after it has been scaled
+			 * */
+			[Bindable]
+			public function get contentHeight():int {
+				return _contentHeight;
+			}
+			public function set contentHeight(value:int):void {
+				_contentHeight = value;
+			}
+			
+			/**
+			 * Determines how to scale and size the image.
+			 * Full - Scale the image to fit the given width and height and clip the edges to maintain the aspect ratio.
+			 * Letterbox - Scale the image to fit the given width and height but don't clip the edges while maintaining aspect ratio.
+			 * Fit to Height - Scale the image to fit in the given height, width is not important and clip the edges to maintain the aspect ratio.
+			 * Fit to Width - Scale the image to fit the given width, height is not important and clip the edges to maintain the aspect ratio.
+			 * Stretch - Stretch the image to fit the given width and height not maintaining aspect ratio.
+			 * Scale Up Smaller Images - an optional property that determines if images smaller than the given width and height are scaled up to fit
+			 * */
+			[Inspectable(type="String", enumeration="full,fitToHeight,fitToWidth,letterbox,stretch,none", defaultValue="full")]
+			override public function get scaleMode():String {
+				return _scaleMode;
+			}
+			[Bindable]
+			override public function set scaleMode(value:String):void {
+				super.scaleMode = value;
+				_scaleMode = value;
+				if (skin) skin.invalidateDisplayList();
+			}
+			private var _scaleMode:String;
+			
+			override public function set fillMode(value:String):void
+			{
+				super.fillMode = value;
+				if (skin) skin.invalidateDisplayList();
+			}
+			
+			override public function set horizontalAlign(value:String):void
+			{
+				super.horizontalAlign = value;
+				if (skin) skin.invalidateDisplayList();
+			}
+			
+			override public function set verticalAlign(value:String):void
+			{
+				super.verticalAlign = value;
+				if (skin) skin.invalidateDisplayList();
+			}
+			
+			
+			/**
+			 * If the content loader is set then removes the cached item and rerequests it
+			 * */
+			public function reload():void {
+				var currentTime:int = getTimer();
+				var difference:int = currentTime - lastUpdate;
+				
+				// this happens for every instance
+				// do we want to check when the last call was?
+				// wait 3 seconds before removing again
+				if (contentLoader && difference>3000) {
+					ContentCache(contentLoader).removeCacheEntry(source);
+					lastUpdate = getTimer();
+				}
+				var backup:* = source;
+				source = "";
+				source = backup;
+			}
+		]]>
+	</fx:Script>
+	
+</s:Image>

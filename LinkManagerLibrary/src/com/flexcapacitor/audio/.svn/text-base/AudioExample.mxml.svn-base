@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:audio="com.flexcapacitor.audio.*"
+			   xmlns:utils="com.flexcapacitor.utils.*">
+	<fx:Script>
+		<![CDATA[
+            import mx.collections.ArrayCollection;
+        ]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<audio:AudioRecording id="audio" />
+		<utils:CompilationDate id="compileDate" />
+	</fx:Declarations>
+	
+	<s:Label text="Microphone Audio Suite" x="15" y="20" fontSize="16" fontWeight="bold"/>
+	<s:Label text="SWF Build date: {compileDate.hour}:{compileDate.minute}{compileDate.ampm}" x="15" y="50" fontSize="11"/>
+	<s:Label text="Flash Player: {Capabilities.version}" x="15" y="38" fontSize="11"/>
+	<s:Label text="Audio Encoder: {Capabilities.hasAudioEncoder}" x="15" y="62" fontSize="11"/>
+	<s:Label text="Streaming Audio: {Capabilities.hasStreamingAudio}" x="15" y="74" fontSize="11"/>
+	
+	<s:HGroup y="396" verticalAlign="middle" left="360">
+		<s:Button label="record" click="audio.record()" />
+		<s:Button label="play" click="audio.play()" />
+		<s:Button label="stop" click="audio.stop()" />
+		<s:Button label="pause" click="audio.pause()" />
+		<s:Button label="resume" click="audio.resume()" />
+		<s:Button label="save" click="audio.save('audio.wav', audio.getRate())" />
+		<s:Button label="compress" click="audio.saveAndCompress('audio_compressed.zip', audio.getRate())" />
+	</s:HGroup>
+	<s:VGroup y="96" x="360">
+		<s:Label text="Recording" fontWeight="bold"/>
+		<s:Label text="Microphone: {audio.microphoneName}" />
+		<s:Label text="Codec: {audio.codec}"/>
+		<s:Label text="Sample Rate: {audio.microphoneSampleRate} khz"/>
+		<s:Label text="Time: {audio.recordingTime}s"/>
+		<s:Label text="Length: {audio.audioLength} kbs"/>
+		<s:Label text="Nelly Moser Encoding Quality: {audio.nellyMoserEncodingQuality}"/>
+		<s:Label text="Speex Encoding Quality: {audio.microphoneEncodeQuality}"/>
+		<s:Label text="Noise Suppression Level: {audio.noiseSuppressionLevel}"/>
+		<s:Label text="Echo Suppression: {audio.useEchoSuppression}"/>
+		<s:Label text="Activating: {audio.activating}"/>
+		<s:Label text="Activity Level: {audio.activityLevel}"/>
+		<s:Label text="Silence Level: {audio.silenceLevel}"/>
+		<s:Label text="Silence Level Timeout: {audio.silenceLevelTimeout}"/>
+		<s:Label text="Microphone Gain: {audio.gain}"/>
+		<s:Label text="Volume: {audio.volume}"/>
+	</s:VGroup>
+	<s:VGroup y="96" x="650">
+		<s:Label text="Playback" fontWeight="bold"/>
+		<s:Label text="Codec: {audio.codec}"/>
+		<s:Label text="Sample Rate: {audio.microphoneSampleRate} khz"/>
+		<s:Label text="Total Time: {audio.recordingTime}s"/>
+		<s:Label text="Playback Time: {audio.playbackTime}s"/>
+		<s:Label text="Left Peak: {audio.leftPeak}"/>
+		<s:Label text="Right Peak: {audio.rightPeak}"/>
+		<s:Label text="Latency: {audio.latency}ms"/>
+		<s:Label text="Length: {audio.audioLength} kbs"/>
+		<s:Label text="Length (compressed): {audio.audioCompressedLength} kbs"/>
+		<s:Label text="Volume: {audio.volume}"/>
+		<s:Label text="Speed: {audio.speed}"/>
+	</s:VGroup>
+
+	<mx:Form x="54" y="82" verticalGap="8">
+		<mx:FormItem label="Microphone">
+			<s:DropDownList dataProvider="{new ArrayCollection(audio.microphoneNames)}" selectedItem="{audio.microphoneName}"
+							change="{audio.microphoneName = DropDownList(event.currentTarget).selectedItem}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Codec">
+			<s:DropDownList dataProvider="{new ArrayCollection(audio.codecs)}" selectedIndex="1" 
+							change="{audio.codec = DropDownList(event.currentTarget).selectedItem}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Sample Rate">
+			<s:DropDownList dataProvider="{new ArrayCollection(audio.rates)}" selectedItem="{audio.microphoneSampleRate}"
+						change="{audio.rate = DropDownList(event.currentTarget).selectedItem}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Nelly Moser Quality">
+			<s:DropDownList dataProvider="{new ArrayCollection(audio.NELLYMOSER_QUALITY)}" selectedIndex="0" 
+						change="{audio.nellyMoserEncodingQuality = DropDownList(event.currentTarget).selectedItem}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Speex Encoding Quality">
+			<s:NumericStepper stepSize="1" maximum="10" minimum="0" value="{audio.encodeQuality}"  
+						change="{audio.encodeQuality = NumericStepper(event.currentTarget).value}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Loopback">
+			<s:CheckBox id="loopback" selected="{audio.loopback}"
+						change="{audio.loopback=CheckBox(event.currentTarget).selected}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Microphone Gain">
+			<s:HSlider id="gain0" value="{audio.gain}" snapInterval="5" liveDragging="true"
+					   change="{audio.gain=HSlider(event.currentTarget).value}" maximum="100" minimum="0"/>
+		</mx:FormItem>
+		<mx:FormItem label="Echo Suppression">
+			<s:CheckBox id="echoSuppression" selected="{audio.useEchoSuppression}"
+						change="{audio.useEchoSuppression=CheckBox(event.currentTarget).selected}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Enable VAD">
+			<s:CheckBox id="enableVAD" selected="{audio.enableVAD}"
+						change="{audio.enableVAD=CheckBox(event.currentTarget).selected}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Silence Level">
+			<s:HSlider id="silence" value="{audio.silenceLevel}" snapInterval="1" liveDragging="true"
+					   change="{audio.silenceLevel=HSlider(event.currentTarget).value}" maximum="50" minimum="0"/>
+		</mx:FormItem>
+		<mx:FormItem label="Noise Suppression Level">
+			<s:HSlider id="noiseSuppression" value="{audio.noiseSuppressionLevel}" snapInterval="1" liveDragging="true"
+					   change="{audio.noiseSuppressionLevel=HSlider(event.currentTarget).value}" maximum="0" minimum="-30"/>
+		</mx:FormItem>
+		<mx:FormItem label="Effect Driver">
+			<s:CheckBox id="effect" selected="{audio.enableEffectDriver}"
+						change="{audio.enableEffectDriver=CheckBox(event.currentTarget).selected}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Volume">
+			<s:HSlider id="volume" value="{audio.volume}" snapInterval="1" liveDragging="true"
+					   change="{audio.volume=HSlider(event.currentTarget).value}" maximum="100" minimum="0"/>
+		</mx:FormItem>
+		<mx:FormItem label="Speed">
+			<s:HSlider id="speed" snapInterval="5" liveDragging="true"
+					   value="{audio.speed}" change="{audio.speed=HSlider(event.currentTarget).value}" maximum="50" minimum="-50"/>
+		</mx:FormItem>
+		<mx:FormItem label="Range">
+			<s:HSlider id="range" snapInterval="10" liveDragging="true"
+					   value="{audio.range}" change="{audio.range=HSlider(event.currentTarget).value}" maximum="100" minimum="10"/>
+		</mx:FormItem>
+	</mx:Form>
+	<s:HGroup x="360" y="437">
+		<s:Button label="enable mic" click="audio.enableMicrophone()" enabled="{!audio.microphoneEnabled}"/>
+		<s:Button label="select microphone" click="audio.selectMicrophone(-1)" />
+	</s:HGroup>
+	<s:Label x="360" y="483" text="Note: Not all options are available. Options may vary depending on codec"/>
+	
+</s:Application>

@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/flexcapacitor/!svn/ver/366/trunk/library/src/com/flexcapacitor/audio
+END
+AudioRecording.as
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/flexcapacitor/!svn/ver/366/trunk/library/src/com/flexcapacitor/audio/AudioRecording.as
+END
+AudioExample.mxml
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/flexcapacitor/!svn/ver/358/trunk/library/src/com/flexcapacitor/audio/AudioExample.mxml
+END
+AudioPlayback.as
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/flexcapacitor/!svn/ver/365/trunk/library/src/com/flexcapacitor/audio/AudioPlayback.as
+END
+EffectDriver.as
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/flexcapacitor/!svn/ver/351/trunk/library/src/com/flexcapacitor/audio/EffectDriver.as
+END
+WAVWriter.as
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/flexcapacitor/!svn/ver/356/trunk/library/src/com/flexcapacitor/audio/WAVWriter.as
+END

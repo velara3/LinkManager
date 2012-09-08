@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="false" useMultiPlatformConfig="false" version="1">
+  <includeClasses>
+    <classEntry path="com.flexcapacitor.actions.Action"/>
+    <classEntry path="com.flexcapacitor.actions.AddChild"/>
+    <classEntry path="com.flexcapacitor.actions.Alert"/>
+    <classEntry path="com.flexcapacitor.actions.BrowserTarget"/>
+    <classEntry path="com.flexcapacitor.actions.CallMethod"/>
+    <classEntry path="com.flexcapacitor.actions.Debug"/>
+    <classEntry path="com.flexcapacitor.actions.DownloadTarget"/>
+    <classEntry path="com.flexcapacitor.actions.GoToState"/>
+    <classEntry path="com.flexcapacitor.actions.GoToURL"/>
+    <classEntry path="com.flexcapacitor.actions.Hide"/>
+    <classEntry path="com.flexcapacitor.actions.IAction"/>
+    <classEntry path="com.flexcapacitor.actions.IDefaultAction"/>
+    <classEntry path="com.flexcapacitor.actions.RemoveChild"/>
+    <classEntry path="com.flexcapacitor.actions.ScrollToAnchor"/>
+    <classEntry path="com.flexcapacitor.actions.ScrollToPosition"/>
+    <classEntry path="com.flexcapacitor.actions.ScrollToTop"/>
+    <classEntry path="com.flexcapacitor.actions.SetEventHandler"/>
+    <classEntry path="com.flexcapacitor.actions.SetFragment"/>
+    <classEntry path="com.flexcapacitor.actions.SetPageTitle"/>
+    <classEntry path="com.flexcapacitor.actions.SetProperty"/>
+    <classEntry path="com.flexcapacitor.actions.SetStyle"/>
+    <classEntry path="com.flexcapacitor.actions.Show"/>
+    <classEntry path="com.flexcapacitor.actions.Trace"/>
+    <classEntry path="com.flexcapacitor.actions.Wait"/>
+    <classEntry path="com.flexcapacitor.audio.AudioExample"/>
+    <classEntry path="com.flexcapacitor.audio.AudioPlayback"/>
+    <classEntry path="com.flexcapacitor.audio.AudioRecording"/>
+    <classEntry path="com.flexcapacitor.audio.EffectDriver"/>
+    <classEntry path="com.flexcapacitor.audio.WAVWriter"/>
+    <classEntry path="com.flexcapacitor.containers.ScrollGroup"/>
+    <classEntry path="com.flexcapacitor.context.menu.IMenuItem"/>
+    <classEntry path="com.flexcapacitor.context.menu.ImageCopyLocation"/>
+    <classEntry path="com.flexcapacitor.context.menu.ImageEdit"/>
+    <classEntry path="com.flexcapacitor.context.menu.ImageSave"/>
+    <classEntry path="com.flexcapacitor.context.menu.ImageView"/>
+    <classEntry path="com.flexcapacitor.context.menu.ImageViewerClose"/>
+    <classEntry path="com.flexcapacitor.context.menu.LinkCopyLocation"/>
+    <classEntry path="com.flexcapacitor.context.menu.LinkOpenInTab"/>
+    <classEntry path="com.flexcapacitor.context.menu.LinkOpenInWindow"/>
+    <classEntry path="com.flexcapacitor.context.menu.LinkSave"/>
+    <classEntry path="com.flexcapacitor.context.menu.LinkSend"/>
+    <classEntry path="com.flexcapacitor.context.menu.MenuItem"/>
+    <classEntry path="com.flexcapacitor.context.menu.PageBack"/>
+    <classEntry path="com.flexcapacitor.context.menu.PageBookmark"/>
+    <classEntry path="com.flexcapacitor.context.menu.PageCopyLocation"/>
+    <classEntry path="com.flexcapacitor.context.menu.PageForward"/>
+    <classEntry path="com.flexcapacitor.context.menu.PageReload"/>
+    <classEntry path="com.flexcapacitor.context.menu.PageSave"/>
+    <classEntry path="com.flexcapacitor.context.menu.PageSend"/>
+    <classEntry path="com.flexcapacitor.context.menu.PageViewSource"/>
+    <classEntry path="com.flexcapacitor.controls.AlertNotification"/>
+    <classEntry path="com.flexcapacitor.controls.Anchor"/>
+    <classEntry path="com.flexcapacitor.controls.ButtonLink"/>
+    <classEntry path="com.flexcapacitor.controls.Countdown"/>
+    <classEntry path="com.flexcapacitor.controls.DateTime"/>
+    <classEntry path="com.flexcapacitor.controls.IContentLoadingComponent"/>
+    <classEntry path="com.flexcapacitor.controls.IHyperlink"/>
+    <classEntry path="com.flexcapacitor.controls.Image"/>
+    <classEntry path="com.flexcapacitor.controls.ImageLink"/>
+    <classEntry path="com.flexcapacitor.controls.ImageProperties"/>
+    <classEntry path="com.flexcapacitor.controls.ImageViewer"/>
+    <classEntry path="com.flexcapacitor.controls.Label"/>
+    <classEntry path="com.flexcapacitor.controls.LayoutLines"/>
+    <classEntry path="com.flexcapacitor.controls.PageView"/>
+    <classEntry path="com.flexcapacitor.controls.PostsView"/>
+    <classEntry path="com.flexcapacitor.controls.RichSelectableText"/>
+    <classEntry path="com.flexcapacitor.controls.SidePanel"/>
+    <classEntry path="com.flexcapacitor.controls.Spacer"/>
+    <classEntry path="com.flexcapacitor.controls.TextAutoSize"/>
+    <classEntry path="com.flexcapacitor.controls.TextInputPrompt"/>
+    <classEntry path="com.flexcapacitor.controls.TextLink"/>
+    <classEntry path="com.flexcapacitor.controls.VerticalSpacer"/>
+    <classEntry path="com.flexcapacitor.events.ActionHandlerEvent"/>
+    <classEntry path="com.flexcapacitor.events.CountdownCompleteEvent"/>
+    <classEntry path="com.flexcapacitor.events.EventHandlerEvent"/>
+    <classEntry path="com.flexcapacitor.events.FragmentHandlerEvent"/>
+    <classEntry path="com.flexcapacitor.events.HighlightEvent"/>
+    <classEntry path="com.flexcapacitor.events.InspectorEvent"/>
+    <classEntry path="com.flexcapacitor.events.InspectorPropertyEvent"/>
+    <classEntry path="com.flexcapacitor.events.LinkClickEvent"/>
+    <classEntry path="com.flexcapacitor.events.ParameterHandlerEvent"/>
+    <classEntry path="com.flexcapacitor.events.StateHandlerEvent"/>
+    <classEntry path="com.flexcapacitor.events.TimeChangedEvent"/>
+    <classEntry path="com.flexcapacitor.explorers.ImageExplorer"/>
+    <classEntry path="com.flexcapacitor.formatters.FormatterSequence"/>
+    <classEntry path="com.flexcapacitor.formatters.HTMLFormatter"/>
+    <classEntry path="com.flexcapacitor.formatters.HTMLFormatterTLF"/>
+    <classEntry path="com.flexcapacitor.graphics.LayoutLines"/>
+    <classEntry path="com.flexcapacitor.handlers.ActionHandler"/>
+    <classEntry path="com.flexcapacitor.handlers.AnchorHandler"/>
+    <classEntry path="com.flexcapacitor.handlers.Condition"/>
+    <classEntry path="com.flexcapacitor.handlers.EventHandler"/>
+    <classEntry path="com.flexcapacitor.handlers.FragmentHandler"/>
+    <classEntry path="com.flexcapacitor.handlers.Handler"/>
+    <classEntry path="com.flexcapacitor.handlers.IHandler"/>
+    <classEntry path="com.flexcapacitor.handlers.ParameterHandler"/>
+    <classEntry path="com.flexcapacitor.handlers.StateHandler"/>
+    <classEntry path="com.flexcapacitor.inspectors.BorderStyles"/>
+    <classEntry path="com.flexcapacitor.inspectors.Constraints"/>
+    <classEntry path="com.flexcapacitor.inspectors.Description"/>
+    <classEntry path="com.flexcapacitor.inspectors.Example"/>
+    <classEntry path="com.flexcapacitor.inspectors.IInspector"/>
+    <classEntry path="com.flexcapacitor.inspectors.Outline"/>
+    <classEntry path="com.flexcapacitor.inspectors.Property"/>
+    <classEntry path="com.flexcapacitor.inspectors.SearchExpression"/>
+    <classEntry path="com.flexcapacitor.inspectors.Selection"/>
+    <classEntry path="com.flexcapacitor.inspectors.Statistics"/>
+    <classEntry path="com.flexcapacitor.managers.AnchorManager"/>
+    <classEntry path="com.flexcapacitor.managers.BehaviorManager"/>
+    <classEntry path="com.flexcapacitor.managers.ContextMenuManager"/>
+    <classEntry path="com.flexcapacitor.managers.DraggableLabelManager"/>
+    <classEntry path="com.flexcapacitor.managers.ImageDragManager"/>
+    <classEntry path="com.flexcapacitor.managers.LinkManager"/>
+    <classEntry path="com.flexcapacitor.managers.MouseWheelManager"/>
+    <classEntry path="com.flexcapacitor.managers.PositionManager"/>
+    <classEntry path="com.flexcapacitor.proxy.ParametersProxy"/>
+    <classEntry path="com.flexcapacitor.serialization.json.JSON"/>
+    <classEntry path="com.flexcapacitor.serialization.json.JSONDecoder"/>
+    <classEntry path="com.flexcapacitor.serialization.json.JSONEncoder"/>
+    <classEntry path="com.flexcapacitor.serialization.json.JSONParseError"/>
+    <classEntry path="com.flexcapacitor.serialization.json.JSONToken"/>
+    <classEntry path="com.flexcapacitor.serialization.json.JSONTokenType"/>
+    <classEntry path="com.flexcapacitor.serialization.json.JSONTokenizer"/>
+    <classEntry path="com.flexcapacitor.skins.DashedLine"/>
+    <classEntry path="com.flexcapacitor.skins.DottedFocusRect"/>
+    <classEntry path="com.flexcapacitor.skins.ImageSkin"/>
+    <classEntry path="com.flexcapacitor.skins.LinkFocusRectangle"/>
+    <classEntry path="com.flexcapacitor.skins.ListWithoutScrollbars"/>
+    <classEntry path="com.flexcapacitor.skins.TextAreaLineNumbersSkin"/>
+    <classEntry path="com.flexcapacitor.utils.ApplicationUtils"/>
+    <classEntry path="com.flexcapacitor.utils.ArrayUtils"/>
+    <classEntry path="com.flexcapacitor.utils.BrowserScrollbars"/>
+    <classEntry path="com.flexcapacitor.utils.CallLater"/>
+    <classEntry path="com.flexcapacitor.utils.ClassUtils"/>
+    <classEntry path="com.flexcapacitor.utils.CollectionFilter"/>
+    <classEntry path="com.flexcapacitor.utils.CompilationDate"/>
+    <classEntry path="com.flexcapacitor.utils.CountdownVO"/>
+    <classEntry path="com.flexcapacitor.utils.DateComposer"/>
+    <classEntry path="com.flexcapacitor.utils.DateMath"/>
+    <classEntry path="com.flexcapacitor.utils.DateVO"/>
+    <classEntry path="com.flexcapacitor.utils.ElementInspector"/>
+    <classEntry path="com.flexcapacitor.utils.ElementInspectorGroup"/>
+    <classEntry path="com.flexcapacitor.utils.ElementInspectorPanel"/>
+    <classEntry path="com.flexcapacitor.utils.EventHandlerUtil"/>
+    <classEntry path="com.flexcapacitor.utils.FindText"/>
+    <classEntry path="com.flexcapacitor.utils.HandlerInjector"/>
+    <classEntry path="com.flexcapacitor.utils.InheritanceLookup"/>
+    <classEntry path="com.flexcapacitor.utils.InspectorUtils"/>
+    <classEntry path="com.flexcapacitor.utils.LeadingZeros"/>
+    <classEntry path="com.flexcapacitor.utils.ResizeManager"/>
+    <classEntry path="com.flexcapacitor.utils.StateUtils"/>
+    <classEntry path="com.flexcapacitor.utils.SyntaxHighlighter"/>
+    <classEntry path="com.flexcapacitor.utils.TabStopper"/>
+    <classEntry path="com.flexcapacitor.utils.TimeVO"/>
+    <classEntry path="com.flexcapacitor.utils.TokenReplace"/>
+    <classEntry path="com.flexcapacitor.utils.TypeUtils"/>
+    <classEntry path="com.flexcapacitor.utils.ViewCollection"/>
+    <classEntry path="com.flexcapacitor.utils.ViewDisplayList"/>
+    <classEntry path="com.flexcapacitor.vo.ContentLoadingItem"/>
+    <classEntry path="com.flexcapacitor.vo.HistoryInfo"/>
+    <classEntry path="com.flexcapacitor.vo.LinkInfo"/>
+    <classEntry path="com.flexcapacitor.vo.ParameterProperty"/>
+    <classEntry path="com.flexcapacitor.vo.StateOption"/>
+    <classEntry path="com.flexcapacitor.vo.VisualElementVO"/>
+    <classEntry path="com.flexcapacitor.validation.ValidatingTextArea"/>
+    <classEntry path="net.flashdan.containers.FlexibleWindow"/>
+    <classEntry path="net.flashdan.containers.events.FlexibleWindowBoundsEvent"/>
+    <classEntry path="net.flashdan.containers.skins.FlexibleWindowSkin"/>
+    <classEntry path="net.hires.debug.Stats"/>
+    <classEntry path="com.flexcapacitor.graphics.BitmapScaleMode"/>
+    <classEntry path="com.flexcapacitor.controls.FilteredList"/>
+    <classEntry path="com.flexcapacitor.utils.XMLUtils"/>
+    <classEntry path="com.flexcapacitor.controls.TextAreaPrompt"/>
+    <classEntry path="com.flexcapacitor.utils.StringUtils"/>
+  </includeClasses>
+  <includeResources>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Mail-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Mail-icon.png"/>
+    <resourceEntry destPath="com/flexcapacitor/controls/over-cursor.png" sourcePath="com/flexcapacitor/controls/over-cursor.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Save-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Save-icon.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Refresh-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Refresh-icon.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Copy.png" sourcePath="com/flexcapacitor/inspectors/icons/Copy.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Save-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Save-icon (1).png"/>
+    <resourceEntry destPath="com/flexcapacitor/controls/drag-cursor.png" sourcePath="com/flexcapacitor/controls/drag-cursor.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Help-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Help-icon (1).png"/>
+    <resourceEntry destPath="com/flexcapacitor/managers/swfMouseWheel.js" sourcePath="com/flexcapacitor/managers/swfMouseWheel.js"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Settings-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Settings-icon.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Search-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Search-icon.png"/>
+    <resourceEntry destPath="net/.DS_Store" sourcePath="net/.DS_Store"/>
+    <resourceEntry destPath="com/flexcapacitor/controls/alert_button.png" sourcePath="com/flexcapacitor/controls/alert_button.png"/>
+    <resourceEntry destPath="net/flashdan/containers/assets/resizeCursorTLBR.gif" sourcePath="net/flashdan/containers/assets/resizeCursorTLBR.gif"/>
+    <resourceEntry destPath="net/flashdan/containers/assets/resizeCursorV.gif" sourcePath="net/flashdan/containers/assets/resizeCursorV.gif"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/ItemRenderer.png" sourcePath="com/flexcapacitor/inspectors/icons/ItemRenderer.png"/>
+    <resourceEntry destPath="com/flexcapacitor/controls/alert_button_over.png" sourcePath="com/flexcapacitor/controls/alert_button_over.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Information-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Information-icon (1).png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Skin.png" sourcePath="com/flexcapacitor/inspectors/icons/Skin.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Globe-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Globe-icon (1).png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Package.png" sourcePath="com/flexcapacitor/inspectors/icons/Package.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Globe-icon (2).png" sourcePath="com/flexcapacitor/inspectors/icons/Globe-icon (2).png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Help-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Help-icon.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/File.png" sourcePath="com/flexcapacitor/inspectors/icons/File.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Module.png" sourcePath="com/flexcapacitor/inspectors/icons/Module.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Settings-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Settings-icon (1).png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/DisplayObjectIcon.jpg" sourcePath="com/flexcapacitor/inspectors/icons/DisplayObjectIcon.jpg"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Component.png" sourcePath="com/flexcapacitor/inspectors/icons/Component.png"/>
+    <resourceEntry destPath="com/flexcapacitor/controls/alert_button_down.png" sourcePath="com/flexcapacitor/controls/alert_button_down.png"/>
+    <resourceEntry destPath="net/flashdan/containers/assets/resizeCursorH.gif" sourcePath="net/flashdan/containers/assets/resizeCursorH.gif"/>
+    <resourceEntry destPath="com/flexcapacitor/utils/cursor_resize.gif" sourcePath="com/flexcapacitor/utils/cursor_resize.gif"/>
+    <resourceEntry destPath="com/flexcapacitor/controls/alert_window.png" sourcePath="com/flexcapacitor/controls/alert_window.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Information-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Information-icon.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Refresh-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Refresh-icon (1).png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Search-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Search-icon (1).png"/>
+    <resourceEntry destPath="net/flashdan/containers/.DS_Store" sourcePath="net/flashdan/containers/.DS_Store"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Folder.png" sourcePath="com/flexcapacitor/inspectors/icons/Folder.png"/>
+    <resourceEntry destPath="net/flashdan/.DS_Store" sourcePath="net/flashdan/.DS_Store"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Editor-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Editor-icon (1).png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/ActionScript.png" sourcePath="com/flexcapacitor/inspectors/icons/ActionScript.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Editor-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Editor-icon.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Globe-icon.png" sourcePath="com/flexcapacitor/inspectors/icons/Globe-icon.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Editor-icon (2).png" sourcePath="com/flexcapacitor/inspectors/icons/Editor-icon (2).png"/>
+    <resourceEntry destPath="com/flexcapacitor/managers/fcBookmark.js" sourcePath="com/flexcapacitor/managers/fcBookmark.js"/>
+    <resourceEntry destPath="com/flexcapacitor/controls/hand-cursor.png" sourcePath="com/flexcapacitor/controls/hand-cursor.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Application.png" sourcePath="com/flexcapacitor/inspectors/icons/Application.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Selection.png" sourcePath="com/flexcapacitor/inspectors/icons/Selection.png"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Cancel.png" sourcePath="com/flexcapacitor/inspectors/icons/Cancel.png"/>
+    <resourceEntry destPath="com/flexcapacitor/controls/preloaderIcon.png" sourcePath="com/flexcapacitor/controls/preloaderIcon.png"/>
+    <resourceEntry destPath="net/flashdan/containers/assets/resizeCursorTRBL.gif" sourcePath="net/flashdan/containers/assets/resizeCursorTRBL.gif"/>
+    <resourceEntry destPath="com/flexcapacitor/inspectors/icons/Mail-icon (1).png" sourcePath="com/flexcapacitor/inspectors/icons/Mail-icon (1).png"/>
+  </includeResources>
+  <namespaceManifests/>
+</flexLibProperties>

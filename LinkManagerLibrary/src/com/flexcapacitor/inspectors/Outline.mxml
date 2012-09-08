@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 height="300" width="400" implements="com.flexcapacitor.inspectors.IInspector">
+
+	<fx:Metadata>
+		[Event(name="change", type="com.flexcapacitor.events.InspectorEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.flexcapacitor.events.InspectorEvent;
+			import com.flexcapacitor.utils.InspectorUtils;
+			import com.flexcapacitor.utils.TypeUtils;
+			import com.flexcapacitor.vo.VisualElementVO;
+			
+			import flash.desktop.Clipboard;
+			import flash.desktop.ClipboardFormats;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ICollectionView;
+			import mx.core.FlexSprite;
+			import mx.core.IVisualElement;
+			import mx.core.IVisualElementContainer;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.utils.NameUtil;
+			
+			import spark.components.supportClasses.Skin;
+
+			public var displayList:ArrayCollection;
+			
+			public var displayListItems:Dictionary;
+			
+			public var openItems:Array;
+
+			[Bindable]
+			public var searchPattern:String;
+			
+			public var showElements:Boolean = true;
+			public var showItemRenderers:Boolean = true;
+			public var showSkins:Boolean = true;
+			
+			[Bindable]
+			[Embed("icons/DisplayObjectIcon.jpg")]
+			private var DisplayObjectIcon:Class;
+
+			private var _dataProvider:ArrayCollection;
+
+			private var _target:DisplayObject;
+			
+			public function createDisplayObjectVO(element:DisplayObject):VisualElementVO {
+				var visualElementVO:VisualElementVO;
+				
+				if (displayListItems && element in displayListItems) {
+					return displayListItems[element];
+				}
+				
+				visualElementVO = VisualElementVO.unmarshall(element);
+				visualElementVO.children = getChildren(element);
+				
+				return visualElementVO;
+			}
+
+			public function get dataProvider():ArrayCollection {
+				return _dataProvider;
+			}
+
+			[Bindable]
+			public function set dataProvider(value:ArrayCollection):void {
+				_dataProvider = value;
+
+				if (value) {
+					tree.validateNow();
+				}
+				else {
+					
+				}
+			}
+			
+			/**
+			 * Returns an array of display objects
+			 * Optionally returns elements
+			 * */
+			public function getChildren(displayObject:DisplayObject, getElements:Boolean=false):ArrayCollection {
+				var displayObject:DisplayObject = DisplayObject(displayObject);
+				var displayObjectContainer:DisplayObjectContainer;
+				
+				var visualElementContainer:IVisualElementContainer;
+				var visualElement:IVisualElement;
+				
+				var visualElementVO:VisualElementVO = new VisualElementVO();
+				
+				var children:ArrayCollection = new ArrayCollection();
+				var child:DisplayObject;
+				
+				
+				// attempt to cast to a specific type and assign in the process
+				displayObjectContainer 	= displayObject as DisplayObjectContainer;
+				visualElementContainer 	= displayObject as IVisualElementContainer;
+				visualElement 			= displayObject as IVisualElement;
+				
+				
+				// gather all the display objects on the current display object
+				if (displayObjectContainer) {
+					
+					for (var bb:int=0; bb<displayObjectContainer.numChildren;bb++) {
+						try {
+							
+							child = displayObjectContainer.getChildAt(bb);
+							visualElementVO = createDisplayObjectVO(child);
+							children.addItem(visualElementVO);
+							
+						}
+						catch (error:SecurityError) {
+							//trace("Error = "+error.message);
+						}
+						finally {
+							//trace("Finally ");
+						}
+					}
+				}
+				
+				if (visualElementContainer && getElements) {
+					
+					for (var cc:int=0; cc<visualElementContainer.numElements;cc++) {
+						visualElementVO = createDisplayObjectVO(DisplayObject(visualElementContainer.getElementAt(cc)));
+						children.addItem(visualElementVO);
+					}
+				}
+				
+				return children;
+			}
+			
+			/**
+			 * Populates the Tree outline with display objects
+			 * */
+			public function populateDisplayList():void {
+				var parentVO:VisualElementVO;
+				var childVO:VisualElementVO;
+				var topDisplayObjectVO:VisualElementVO;
+				var displayObject:DisplayObject = DisplayObject(target);
+				var selectedVO:VisualElementVO;
+				openItems = [];
+				displayListItems = new Dictionary();
+				
+				// walk up the display list
+				// TODO: filter out all display objects we don't want to see
+				while (displayObject) {
+					
+					// store display element information
+					parentVO = createDisplayObjectVO(displayObject);
+					
+					// save display element VO 
+					displayListItems[displayObject] = parentVO;
+					
+					// save reference to display element VO's for tree
+					openItems.push(parentVO);
+					
+					// save reference to selected item
+					if (selectedVO==null) selectedVO = parentVO;
+					
+					// check if next parent exists
+					if (!displayObject.parent) {
+						topDisplayObjectVO = parentVO;
+					}
+					
+					//child = displayObject;
+					displayObject = displayObject.parent;
+					
+				}
+				
+				
+				//displayObject = target;
+				
+				dataProvider = new ArrayCollection([topDisplayObjectVO]);
+				
+				openItems.reverse();
+				
+				// used to find the component in Flash Builder search in files feature
+				searchPattern = InspectorUtils.getRegExpSearchPattern(selectedVO.element);
+				
+				// we must call validateNow()
+				callLater(tree_expandChildren, [selectedVO]);
+				
+			}
+
+			public function get target():* {
+				return _target;
+			}
+			
+
+			[Bindable]
+			public function set target(value:*):void {
+				
+				if (_target) {
+					//_target.removeEventListener("foo", fooHandler);
+					InspectorUtils.clearSelection(_target);
+				}
+				
+				if (!(value is DisplayObject)) {
+					_target = null;
+					//enabled = false; // just return for now
+					return;
+				}
+				else {
+					enabled = true;
+				}
+				
+				_target = DisplayObject(value);
+
+				if (value) {
+					InspectorUtils.drawSelection(value);
+					
+					if (tree && tree.selectedItem && VisualElementVO(tree.selectedItem).element==value) {
+						// do not update the outline
+					}
+					else {
+						initializeProperties();
+					}
+				}
+				else {
+
+				}
+			}
+
+			protected function copyToClipboard():void {
+				Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, searchPattern);
+			}
+
+			/**
+			 * 
+			 * */
+			protected function getParentDocument(vo:VisualElementVO):VisualElementVO {
+				
+				var document:DisplayObject = vo.element is UIComponent ? DisplayObject(UIComponent(vo.element).parentDocument) : null;
+				var documentVO:VisualElementVO;
+				
+				if (document in displayListItems) {
+					documentVO = displayListItems[document];
+				}
+
+				return documentVO;
+				
+			}
+
+			protected function initializeProperties():void {
+				if (target == null) {
+					_target = null;
+					return;
+				}
+
+				populateDisplayList();
+			}
+
+			/**
+			 * Get the search pattern of the item in the tree.
+			 * For example, if you select a Button with an id of "submitButton" than a
+			 * regular expression pattern will be shown that you can copy and paste into
+			 * Flash Builder's search in files feature.
+			 * CMD + Shift + F opens it. Select regular expression and paste in the pattern
+			 * Click Search and you'll be shown all instances and locations where a
+			 * Button with id of "submitButton" are found.
+			 * */
+			protected function tree_clickHandler(event:MouseEvent):void {
+				if (tree.selectedItem) {
+					var vo:VisualElementVO = VisualElementVO(tree.selectedItem);
+					var element:DisplayObject = vo.element;
+					var className:String = vo.type;
+					var documentVO:VisualElementVO = getParentDocument(vo);
+					
+					if (className == "InvalidatingSprite" || element == null)
+						return;
+
+					// used to find the component in Flash Builder search in files feature
+					searchPattern = InspectorUtils.getRegExpSearchPattern(element);
+					
+					// let other inspectors know there is a new target selected
+					InspectorUtils.dispatchTargetChangeEvent(element, this);
+					
+					InspectorUtils.drawSelection(element);
+					
+					tree.invalidateList();
+
+				}
+			}
+
+			/**
+			 * Opens the outline to the selected item.
+			 * It won't open unless the instances are all exactly the same instances in the data provider
+			 * */
+			protected function tree_expandChildren(selectedItem:VisualElementVO=null, scrollToItem:Boolean=true):void {
+				
+				if (tree) {
+					for each (var item:VisualElementVO in openItems) {
+						//tree.expandItem(item, true, false, false);
+						tree.expandItem(item, true, false, true);
+					}
+					
+					if (selectedItem) {
+						tree.selectedItem = selectedItem;
+					}
+					
+					if (scrollToItem && tree.selectedIndex) {
+						tree.scrollToIndex(tree.selectedIndex);
+						callLater(tree.scrollToIndex,[tree.selectedIndex]);
+					}
+				}
+			}
+			
+			/**
+			 * This function is attempting to indicate the parent document of the selected item
+			 * It selects the Skin sometimes and sometimes the Component
+			 * Groups don't have parentDocument property so crappy code used to attempt to get it
+			 * */
+			protected function labelFunction(item:VisualElementVO):String {
+				var label:String;
+				var leaf:DisplayObject = item.element;
+				var isLeafUIComponent:Boolean = leaf is UIComponent;
+				var isTargetUIComponent:Boolean = target is UIComponent;
+				var leafParentDocument:DisplayObject = isLeafUIComponent ? DisplayObject(UIComponent(leaf).parentDocument) : null;
+				var targetParentDocument:DisplayObject = isTargetUIComponent ? DisplayObject(UIComponent(target).parentDocument) : null;
+				var isLeafSkin:Boolean = leaf is Skin;
+				var uicomponent:UIComponent;
+				
+				// I'm sure there's an easier way to do this
+				// DUH. Let's set the parent document when target is set
+				// move this code into the set target function
+				
+				// check if this is the parent document of selected item
+				if (leaf == targetParentDocument) {
+					
+					// if parent document is a skin 
+					if (isLeafSkin) {
+						label = item.label + "(document)"; // " (skin)";
+					}
+					else {
+						label = item.label + " (document)";
+					}
+					
+				}
+				
+				// 
+				else if (targetParentDocument is Skin && ("hostComponent" in targetParentDocument) 
+					&& leaf == targetParentDocument["hostComponent"]) {
+					label = item.label + " (host)";
+				}
+				else if (target is Group) {
+					uicomponent = InspectorUtils.getParentUIComponent(DisplayObject(target));
+					
+					// not thoroughly tested
+					if (uicomponent && uicomponent.parentDocument == leaf) {
+						label = item.label + " (document)";
+					}
+					else {
+						label = item.label;
+					}
+				}
+				else {
+					label = item.label;
+				}
+				
+				return label;
+			}
+			
+			/**
+			 * Called when the inspector is closed. Use this method to remove any references
+			 * */
+			public function close():void {
+				InspectorUtils.clearSelection(target);
+				target = null;
+				displayList = null;
+				displayListItems = null;
+				dataProvider = null;
+				openItems = null;
+			}
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<s:VGroup bottom="10" left="10" right="10"
+			  top="10"
+			  height="100%" width="100%">
+		<mx:Tree id="tree" folderClosedIcon="{DisplayObjectIcon}"
+				 folderOpenIcon="{DisplayObjectIcon}"
+				 dataProvider="{dataProvider}" doubleClickEnabled="true"
+				 height="100%" labelField="label" showRoot="true" width="100%"
+				 click="tree_clickHandler(event)"
+				 horizontalScrollPolicy="auto"
+				 labelFunction="labelFunction"
+				 indentation="10">
+		</mx:Tree>
+		<s:HGroup width="100%">
+			<s:TextArea id="searchPatternText" alpha=".7"
+						text="{searchPattern}" width="100%"
+						heightInLines="2"/>
+			<s:Button label="Copy" click="copyToClipboard()"/>
+		</s:HGroup>
+	</s:VGroup>
+
+</s:Group>

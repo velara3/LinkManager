@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import spark.components.Scroller;
+			import spark.core.NavigationUnit;
+			
+			[Bindable]
+			public var verticalLineScrollSize:int = 3;
+			
+			override public function getVerticalScrollPositionDelta(navigationUnit:uint):Number {
+				var maxPosition:int;
+				var newPosition:int;
+				var adjustedPosition:int;
+				
+				switch(navigationUnit) {
+					case NavigationUnit.UP:
+						if (verticalScrollPosition < verticalLineScrollSize) {
+							return -verticalScrollPosition;
+						}
+						return -verticalLineScrollSize;
+						
+					case NavigationUnit.DOWN:
+						newPosition = verticalScrollPosition - verticalLineScrollSize;
+						maxPosition = contentHeight - stage.height;
+						
+						if (newPosition>maxPosition) {
+							adjustedPosition = contentHeight - stage.height + verticalScrollPosition;
+							return adjustedPosition;
+						}
+						return verticalLineScrollSize;
+						
+					default:
+						return super.getVerticalScrollPositionDelta(navigationUnit);
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+</s:Group>

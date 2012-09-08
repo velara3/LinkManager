@@ -1,0 +1,697 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+		alpha.disabled="0.5">
+	
+	<s:states>
+		<s:State name="uninitialized" />
+		<s:State name="loading"/>
+		<s:State name="ready" />
+		<s:State name="invalid" />
+		<s:State name="disabled" />
+	</s:states>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.flexcapacitor.controls.Image;
+			import com.flexcapacitor.graphics.BitmapScaleMode;
+			
+			import mx.core.UIComponentGlobals;
+			
+			/**
+			 * This is the gigantic function that determines how the image, border and mask 
+			 * is sized and positioned. 
+			 * 
+			 * Check the ScaleAndClip example to see these features in use
+			 * 
+			 *  @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number) : void {
+				
+				// this isn't helping to clip the images in design view
+				if (UIComponentGlobals.designMode) {
+					clippingAreaGroup.width = 100//unscaledWidth;
+					clippingAreaGroup.height = 100//unscaledHeight;
+					imageDisplay.width = 100//unscaledWidth;
+					imageDisplay.height = 100//unscaledHeight;
+					imageDisplay.scaleMode = BitmapScaleMode.STRETCH;
+					super.updateDisplayList(unscaledWidth, unscaledHeight);
+					return;
+				}
+				
+				var smallerThanContainer:Boolean;
+				var borderStroke:SolidColorStroke;
+				var clippingStroke:SolidColorStroke;
+				var scaleFactor:Number;
+				var scaleFactorWidth:Number;
+				var scaleFactorHeight:Number;
+				var scaledWidth:int;
+				var scaledHeight:int;
+				var sourceWidth:int 				= imageDisplay.sourceWidth;
+				var sourceHeight:int 				= imageDisplay.sourceHeight;
+				var sourceHasSize:Boolean			= sourceWidth>0 && sourceHeight>0;
+				var skinHasSize:Boolean				= width>0 && height>0;
+				
+				var borderAlpha:Number 				= hostComponent.getStyle("borderAlpha");
+				var borderColor:Number 				= hostComponent.getStyle("borderColor");
+				var borderFit:String 				= hostComponent.getStyle("borderFit") || "exact";
+				var borderVisible:Boolean			= hostComponent.getStyle("borderVisible");
+				var borderWeight:Number 			= hostComponent.getStyle("borderWeight");
+				var cornerRadius:Number 			= hostComponent.getStyle("cornerRadius");
+				var fillMode:String		 			= hostComponent.fillMode;
+				
+				var borderCaps:String				= hostComponent.getStyle("borderCaps") || "none";
+				var borderJoints:String				= hostComponent.getStyle("borderJoints") || "miter";
+				var borderScaleMode:String			= hostComponent.getStyle("borderScaleMode") || "normal";
+				var miterLimit:int					= hostComponent.getStyle("miterLimit") || 3;
+				var pixelHinting:Boolean 			= hostComponent.getStyle("pixelHinting");
+				var verticalAlign:String			= hostComponent.verticalAlign;
+				var horizontalAlign:String 			= hostComponent.horizontalAlign;
+				
+				var scaleMode:String				= hostComponent.scaleMode;
+				var scaleUpSmallerImages:Boolean	= hostComponent.getStyle("scaleUpSmallerImages");
+				
+				var backgroundColor:Number 			= getStyle("backgroundColor");
+				var backgroundAlpha:Number 			= getStyle("backgroundAlpha");
+				
+				
+				imageDisplay.fillMode 				= fillMode;
+				imageDisplay.scaleMode 				= BitmapScaleMode.LETTERBOX; // set to scaleMODE!!!
+				
+				imageDisplay.verticalAlign			= verticalAlign;
+				imageDisplay.horizontalAlign 		= horizontalAlign;
+				
+				
+				/*****************************************************
+				 /* BACKGROUND
+				/*****************************************************/
+				
+				// Push backgroundColor and backgroundAlpha directly
+				// Handle undefined backgroundColor by hiding the background object
+				if (isNaN(backgroundColor)) {
+					background.visible = false;
+					background.includeInLayout = false;
+				}
+				else {
+					background.visible = true;
+					background.includeInLayout = true;
+					bgFill.color = backgroundColor;
+					bgFill.alpha = backgroundAlpha;
+				}
+				
+				/*****************************************************
+				 /* BORDER 
+				/*****************************************************/
+				
+				if (border) {
+					
+					borderStroke = SolidColorStroke(border.stroke);
+					clippingStroke = SolidColorStroke(clippingArea.stroke);
+					
+					if (styleManager.isValidStyleValue(hostComponent.getStyle("pixelHinting"))) {
+						borderStroke.pixelHinting = clippingStroke.pixelHinting = pixelHinting;
+					}
+					else {
+						// default pixelHinting
+						borderStroke.pixelHinting = clippingStroke.pixelHinting = true;
+					}
+					if (!isNaN(borderColor)) {
+						borderStroke.color = clippingStroke.color = borderColor;
+					}
+					if (!isNaN(borderAlpha)) {
+						borderStroke.alpha = clippingStroke.alpha = borderAlpha;
+					}
+					if (!isNaN(borderWeight)) {
+						borderStroke.weight = clippingStroke.weight = borderWeight;
+					}
+					if (!isNaN(miterLimit)) {
+						borderStroke.miterLimit = clippingStroke.miterLimit = miterLimit;
+					}
+					
+					if (borderCaps) {
+						borderStroke.caps = clippingStroke.caps = borderCaps;
+					}
+					if (borderJoints) {
+						borderStroke.joints = clippingStroke.joints = borderJoints;
+					}
+					if (borderScaleMode) {
+						borderStroke.scaleMode = clippingStroke.scaleMode = borderScaleMode;
+					}
+					
+					border.radiusX	= clippingArea.radiusX 	= cornerRadius;
+					border.radiusY 	= clippingArea.radiusY 	= cornerRadius;
+					
+					// prevent pixel sized border when width and height are 0
+					border.visible 				= borderVisible;
+					border.includeInLayout		= borderVisible;
+				}
+				
+				
+				/*****************************************************
+				 /* SIZING 
+				/*****************************************************/
+				
+				// make sure we get the image after if has some content
+				if (imageDisplay.sourceWidth>0 && imageDisplay.sourceWidth>0) {
+					
+					
+					/*****************/
+					/** FULL
+					/*****************/
+					
+					// Scale the image and clip the edges to maintain aspect ratio
+					if (scaleMode==BitmapScaleMode.FULL) {
+						
+						// i think the host component is setting this to letterbox somewhere
+						// so we have to set it back to stretch so we can set the size
+						// need to test
+						imageDisplay.scaleMode = BitmapScaleMode.STRETCH;
+						
+						if (false) {
+							trace("1. unscaledWidth=" + unscaledWidth);
+							trace("2. unscaledHeight=" + unscaledHeight);
+							trace("3. source width=" + sourceWidth);
+							trace("4. source height=" + sourceHeight);
+						}
+						
+						/*****************/
+						/** original code works? but not on resize **
+						 imageDisplay.width = unscaledWidth;
+						 imageDisplay.scaleY = imageDisplay.scaleX;
+						 
+						 if (imageDisplay.height < unscaledHeight) {
+						 imageDisplay.height = unscaledHeight;
+						 imageDisplay.scaleX = imageDisplay.scaleY;
+						 }
+						/*****************/
+						
+						
+						// get scale factor in both dimensions
+						scaleFactorHeight = unscaledHeight / sourceHeight;
+						scaleFactorWidth = unscaledWidth / sourceWidth;
+						
+						// check if the image is smaller than the container
+						if (scaleFactorHeight > 1 && scaleFactorWidth > 1) {
+							smallerThanContainer = true;
+						}
+						
+						
+						// we have to fill up all of the container space 
+						// so get the dimension that needs to be scaled up the most
+						if (scaleFactorWidth > scaleFactorHeight) {
+							scaleFactor = scaleFactorWidth;
+						}
+						else if (scaleFactorHeight > scaleFactorWidth) {
+							scaleFactor = scaleFactorHeight;
+						}
+						else {
+							scaleFactor = (scaleUpSmallerImages) ? 1 : scaleFactorHeight;
+						}
+						
+						
+						// determine the scaled height and width of image as if it had no container
+						if (scaleFactor > 1) {
+							// Image is smaller in width than container
+							scaledWidth = (scaleUpSmallerImages) ? sourceWidth * scaleFactor : sourceWidth;
+							scaledHeight = (scaleUpSmallerImages) ? sourceHeight * scaleFactor : sourceHeight;
+						}
+						else if (scaleFactor==1) {
+							
+							if (scaleFactorWidth<scaleFactorHeight) {
+								scaledWidth = sourceWidth * scaleFactorHeight ;
+								scaledHeight = sourceWidth * scaleFactorHeight;
+							}
+							else if (scaleFactorWidth>scaleFactorHeight) {
+								scaledWidth = sourceWidth * scaleFactorWidth ;
+								scaledHeight = sourceHeight * scaleFactorWidth;
+							}
+							else {
+								scaledWidth = unscaledWidth;
+								scaledHeight = unscaledHeight;
+							}
+						}
+						else {
+							// Image is larger in width than container (scale down)
+							scaledWidth = sourceWidth * scaleFactor;
+							scaledHeight = sourceHeight * scaleFactor;
+						}
+						
+						// set new width and height -> this can be consolidated test first
+						if (scaleFactor==1) {
+							if (smallerThanContainer && !scaleUpSmallerImages) {
+								imageDisplay.width = scaledWidth;
+								imageDisplay.height = scaledHeight;
+							}
+							else {
+								imageDisplay.width = scaledWidth;
+								imageDisplay.height = scaledHeight;
+							}
+						}
+						else {
+							imageDisplay.width = scaledWidth;
+							imageDisplay.height = scaledHeight;
+						}
+						
+						var letComponentPosition:Boolean;
+						
+						if (letComponentPosition) {
+							// not tested
+							// These properties are only applicable when scaleMode 
+							// is set to to BitmapFillMode.SCALE ("scale").
+							imageDisplay.verticalAlign = "middle";
+							imageDisplay.horizontalAlign = "center";
+						}
+						else {
+							// Center the image
+							imageDisplay.x = (unscaledWidth - imageDisplay.width) / 2;
+							imageDisplay.y = (unscaledHeight - imageDisplay.height) / 2;
+						}
+						
+						if (border) {
+							
+							// refactor - switch these next two statements
+							if (borderFit=="exact") {
+								
+								if (smallerThanContainer) {
+									// We have an image that is smaller than the container
+									// we don't want to scale up so we set the border to the content
+									if (!scaleUpSmallerImages) {
+										border.width 	= clippingArea.width 	= scaledWidth;
+										border.height	= clippingArea.height 	= scaledHeight;
+										border.x		= clippingArea.x		= imageDisplay.x;
+										border.y		= clippingArea.y 		= imageDisplay.y;
+									}
+										
+										// we want to scale up the small images 
+										// so we set the width and height to fill available space
+									else {
+										
+										if (scaleFactorHeight==1) {
+											border.width 	= clippingArea.width 	= unscaledWidth;
+											border.height	= clippingArea.height 	= unscaledHeight;
+											border.x		= clippingArea.x		= imageDisplay.x;
+											border.y		= clippingArea.y 		= imageDisplay.y;
+											
+											// if its a number we have to set it to NaN
+											// if its already NaN don't set it again 
+											// because it will constantly invalidate
+											if (!isNaN(border.x)) {
+												border.x			= NaN;
+												border.y			= NaN;
+												clippingArea.y 		= NaN;
+												clippingArea.x		= NaN;
+											}
+										}
+										else {
+											border.percentWidth = 100;
+											border.percentHeight = 100;
+											clippingArea.percentWidth = 100;
+											clippingArea.percentHeight = 100;
+											
+											// if its a number we have to set it to NaN
+											// if its already NaN don't set it again 
+											// because it will constantly invalidate
+											if (!isNaN(border.x)) {
+												border.x			= NaN;
+												border.y			= NaN;
+												clippingArea.y 		= NaN;
+												clippingArea.x		= NaN;
+											}
+										}
+									}
+									
+								}
+									
+									// The image is larger than container
+									// we still want the border to fit exactly 
+								else {
+									
+									// image is thinner than clipped area
+									// we need to set the size and position of the border
+									if (sourceWidth < unscaledWidth) {
+										border.width 	= clippingArea.width 	= scaledWidth;
+										border.x		= clippingArea.x		= imageDisplay.x;
+									}
+									else {
+										// image is not smaller than clipped area
+										// clip at unscaled width and clear the horizontal position
+										border.width 	= clippingArea.width 	= unscaledWidth;
+										
+										if (!isNaN(border.x)) {
+											border.x			= NaN;
+											clippingArea.x 		= NaN;
+										}
+									}
+									
+									// image is shorter than clipped area
+									// we need to set the size of and position of the border
+									if (sourceHeight < unscaledHeight) {
+										border.height	= clippingArea.height 	= scaledHeight;
+										border.y		= clippingArea.y 		= imageDisplay.y;
+										
+									}
+									else {
+										// image is not shorter than clipped area
+										// clip at unscaled height and clear vertical position
+										border.height	= clippingArea.height 	= unscaledHeight;
+										
+										if (!isNaN(border.y)) {
+											border.y			= NaN;
+											clippingArea.y 		= NaN;
+										}
+									}
+									
+								}
+							}
+							else {
+								// Border Fit is set to none
+								
+								// set the width and height of the border to match container
+								
+								// if width is not set setting percent width may not work - need to test
+								if (false) {
+									/* border.percentWidth = 100;
+									border.percentHeight = 100;
+									clippingArea.percentWidth = 100;
+									clippingArea.percentHeight = 100; */
+								}
+								else {
+									if (!isNaN(unscaledWidth)) {
+										border.width = clippingArea.width = unscaledWidth;
+									}
+									if (!isNaN(unscaledHeight)) {
+										border.height = clippingArea.height = unscaledHeight;
+									}
+								}
+								
+								// doing this here lets the framework position the elements
+								// if its a number we have to set it to NaN
+								// if its already NaN don't set it again 
+								// because it will constantly invalidate
+								if (!isNaN(border.x)) {
+									border.x			= NaN;
+									border.y			= NaN;
+									clippingArea.y 		= NaN;
+									clippingArea.x		= NaN;
+								}
+							}
+						}
+						
+						super.updateDisplayList(unscaledWidth, unscaledHeight);
+						
+					}
+					
+					
+					/*****************/
+					/** FIT TO HEIGHT
+					/*****************/
+					// scales the image down or up to the given height maintaining aspect ratio
+					else if (scaleMode==Image.FIT_TO_HEIGHT) {
+						
+						// stretch so we can size to whatever dimensions we want
+						// i belive the host component is setting this to letterbox somewhere
+						imageDisplay.scaleMode = BitmapScaleMode.STRETCH;
+						
+						scaleFactor = unscaledHeight / sourceHeight;
+						if (sourceHeight == 640) {
+							trace("");
+						}
+						
+						// check if the image is smaller than the container
+						if (scaleFactor > 1) {
+							smallerThanContainer = true;
+						}
+						// container is higher than height of image 
+						if (scaleFactor > 1) {
+							// Image is smaller in width than container
+							scaledWidth = (scaleUpSmallerImages) ? sourceWidth * scaleFactor : sourceWidth;
+							// option to scale up smaller images or leave original size
+							scaledHeight = (scaleUpSmallerImages) ? sourceHeight * scaleFactor : sourceHeight;
+						}
+							// container is shorter in height than image
+						else {
+							// Image is larger in width than container (scale down)
+							scaledWidth = sourceWidth * scaleFactor;
+							// Image is larger in height than container (scale down)
+							scaledHeight = sourceHeight * scaleFactor;
+						}
+						
+						imageDisplay.height = scaledHeight;
+						imageDisplay.width = scaledWidth;
+						
+						if (letComponentPosition) {
+							// not tested
+							// These properties are only applicable when scaleMode 
+							// is set to to BitmapFillMode.SCALE ("scale").
+							imageDisplay.verticalAlign = "middle";
+							imageDisplay.horizontalAlign = "center";
+						}
+						else {
+							// left align the image
+							if (!isNaN(imageDisplay.x)) {
+								imageDisplay.x		= NaN;
+								imageDisplay.y		= NaN;
+							}
+						}
+						
+						
+						// border
+						if (border) {
+							
+							// refactor - switch these next two statements
+							if (borderFit=="exact") {
+								
+								
+								if (smallerThanContainer) {
+									// We have an image that is smaller than the container
+									// we don't want to scale up so we set the border to the content
+									if (!scaleUpSmallerImages) {
+										border.width 	= clippingArea.width 	= scaledWidth;
+										border.height	= clippingArea.height 	= scaledHeight;
+										border.x		= clippingArea.x		= imageDisplay.x;
+										border.y		= clippingArea.y 		= imageDisplay.y;
+									}
+										
+										// we want to scale up the small images 
+										// so we set the width and height to fill available space
+									else {
+										
+										if (scaleFactor==1) {
+											border.width 	= clippingArea.width 	= scaledWidth;
+											border.height	= clippingArea.height 	= scaledHeight;
+											border.x		= clippingArea.x		= imageDisplay.x;
+											border.y		= clippingArea.y 		= imageDisplay.y;
+											
+											// if its a number we have to set it to NaN
+											// if its already NaN don't set it again 
+											// because it will constantly invalidate
+											if (!isNaN(border.x)) {
+												border.x			= NaN;
+												border.y			= NaN;
+												clippingArea.y 		= NaN;
+												clippingArea.x		= NaN;
+											}
+										}
+										else {
+											border.width 	= clippingArea.width 	= scaledWidth;
+											//border.percentWidth = 100;
+											border.percentHeight = 100;
+											//clippingArea.percentWidth = 100;
+											clippingArea.percentHeight = 100;
+											
+											// if its a number we have to set it to NaN
+											// if its already NaN don't set it again 
+											// because it will constantly invalidate
+											if (!isNaN(border.x)) {
+												border.x			= NaN;
+												border.y			= NaN;
+												clippingArea.y 		= NaN;
+												clippingArea.x		= NaN;
+											}
+										}
+									}
+									
+								}
+									// Container is smaller
+									// The image is larger than container
+									// we still want the border to fit exactly 
+								else {
+									
+									// image is thinner than clipped area
+									// we need to set the size and position of the border
+									if (sourceWidth < unscaledWidth) {
+										border.width 	= clippingArea.width 	= scaledWidth;
+										//border.x		= clippingArea.x		= imageDisplay.x;
+									}
+									else {
+										// image is not smaller than clipped area
+										// clip at unscaled width and clear the horizontal position
+										border.width 	= clippingArea.width 	= scaledWidth;
+										
+										if (!isNaN(border.x)) {
+											border.x			= NaN;
+											clippingArea.x 		= NaN;
+										}
+									}
+									
+									// image is shorter than clipped area
+									// we need to set the size of and position of the border
+									if (sourceHeight < unscaledHeight) {
+										border.height	= clippingArea.height 	= scaledHeight;
+										border.y		= clippingArea.y 		= imageDisplay.y;
+										
+									}
+									else {
+										// image is not shorter than clipped area
+										// clip at unscaled height and clear vertical position
+										border.height	= clippingArea.height 	= unscaledHeight;
+										
+										if (!isNaN(border.y)) {
+											border.y			= NaN;
+											clippingArea.y 		= NaN;
+										}
+									}
+									
+								}
+							}
+							else {
+								// Border Fit is set to none
+								
+								// set the width and height of the border to match container
+								
+								// if width is not set setting percent width may not work - need to test
+								if (false) {
+									/* border.percentWidth = 100;
+									border.percentHeight = 100;
+									clippingArea.percentWidth = 100;
+									clippingArea.percentHeight = 100; */
+								}
+								else {
+									if (!isNaN(unscaledWidth)) {
+										border.width = clippingArea.width = unscaledWidth;
+									}
+									if (!isNaN(unscaledHeight)) {
+										border.height = clippingArea.height = unscaledHeight;
+									}
+								}
+								
+								// doing this here lets the framework position the elements
+								// if its a number we have to set it to NaN
+								// if its already NaN don't set it again 
+								// because it will constantly invalidate
+								if (!isNaN(border.x)) {
+									border.x			= NaN;
+									border.y			= NaN;
+									clippingArea.y 		= NaN;
+									clippingArea.x		= NaN;
+								}
+							}
+						}
+						// Center the image
+						//imageDisplay.x = (unscaledWidth - scaledWidth) / 2;
+						//imageDisplay.y = (unscaledHeight - scaledHeight) / 2;
+						
+						super.updateDisplayList(unscaledWidth, unscaledHeight);
+						
+					}
+					
+					
+					/*****************/
+					/** LETTERBOX
+					/*****************/
+					else if (scaleMode==Image.LETTERBOX) {
+						
+						if (!isNaN(imageDisplay.x)) {
+							imageDisplay.x = undefined;
+							imageDisplay.y = undefined;
+						}
+						imageDisplay.scaleMode = BitmapScaleMode.LETTERBOX;
+						imageDisplay.width = unscaledWidth;
+						imageDisplay.height = unscaledHeight;
+						super.updateDisplayList(unscaledWidth, unscaledHeight);
+					}
+					
+					/*****************/
+					/** STRETCH
+					/*****************/
+					else if (scaleMode==Image.STRETCH) {
+						if (!isNaN(imageDisplay.x)) {
+							imageDisplay.x = undefined;
+							imageDisplay.y = undefined;
+						}
+						imageDisplay.scaleMode = Image.STRETCH;
+						imageDisplay.width = unscaledWidth;
+						imageDisplay.height = unscaledHeight;
+						super.updateDisplayList(unscaledWidth, unscaledHeight);
+					}
+				}
+				
+				
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				//imageDisplay.scaleMode = BitmapScaleMode.STRETCH;
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<!-- host component 
+	This is not really the necessary host component class but extends from this. 
+	-->
+	<fx:Metadata>
+		<![CDATA[ 
+		[HostComponent("spark.components.Image")]
+		]]>
+	</fx:Metadata>
+	
+	<!-- Defines the appearance of the image background. -->
+	<s:Rect id="background" left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:SolidColor id="bgFill"/>
+		</s:fill>
+	</s:Rect>
+	
+	<!-- Primary image display part -->
+	<s:BitmapImage id="imageDisplay" scaleMode="stretch" mask="{clippingAreaGroup}" />
+	
+	
+	<!-- Defines the image border -->
+	<s:Group width="100%" height="100%" includeIn="ready">
+		<s:Rect id="border" width="100%" height="100%">
+			<s:stroke>
+				<s:SolidColorStroke color="#ff0000" pixelHinting="true" weight="2" joints="miter"/>
+			</s:stroke>
+		</s:Rect>
+	</s:Group>
+	
+	<!-- Defines the area that will not be masked -->
+	<s:Group id="clippingAreaGroup" left="0" right="0" top="0" bottom="0" includeIn="ready">
+		<s:Rect id="clippingArea" width="100%" height="100%">
+			<s:fill>
+				<s:SolidColor color="#000000" />
+			</s:fill>
+			<s:stroke>
+				<s:SolidColorStroke color="#0000ff" pixelHinting="true" weight="2" joints="miter"/>
+			</s:stroke>
+		</s:Rect>
+	</s:Group>
+	
+	<!-- Defines the mask. -->
+	<!--<s:Group id="theMask" left="0" right="0" top="0" bottom="0">
+	<s:Rect id="theMaskFill" width="100%" height="100%">
+	<s:fill>
+	<s:SolidColor color="#000000"/>
+	</s:fill>
+	<s:stroke>
+	<s:SolidColorStroke joints="miter"/>
+	</s:stroke>
+	</s:Rect>
+	</s:Group>-->
+	
+	<!-- Progress indicator part -->
+	<s:Range id="progressIndicator" skinClass="spark.skins.spark.ImageLoadingSkin" verticalCenter="0" horizontalCenter="0" includeIn="loading" layoutDirection="ltr" />
+	
+	<!-- Invalid image icon -->
+	<s:BitmapImage includeIn="invalid" source="@Embed(source='Assets.swf',symbol='__brokenImage')" verticalCenter="0" horizontalCenter="0"/>
+	
+</s:Skin>

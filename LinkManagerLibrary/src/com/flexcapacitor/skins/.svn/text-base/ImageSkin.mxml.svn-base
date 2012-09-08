@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+		alpha.disabled="0.5">
+	
+	<s:states>
+		<s:State name="uninitialized" />
+		<s:State name="loading"/>
+		<s:State name="ready" />
+		<s:State name="invalid" />
+		<s:State name="disabled" />
+	</s:states>
+	
+	<fx:Script>
+		<![CDATA[         
+			import com.flexcapacitor.controls.Image;
+			import com.flexcapacitor.graphics.BitmapScaleMode;
+			
+			import mx.core.UIComponent;
+			
+			/**
+			 *  @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number) : void {
+				var cornerRadius:int = hostComponent.getStyle("cornerRadius") || 0;
+				var sizeMode:String = hostComponent.getStyle("sizeMode") || hostComponent.scaleMode;
+				var borderFit:String = hostComponent.getStyle("borderFit") || "exact";
+				var enableScaleUp:Boolean = true;
+				var scaleFactor:Number;
+				var contentWidth:int;
+				var contentHeight:int;
+				
+				if (sizeMode=="scale") {
+					var isSet:Boolean = styleManager.isValidStyleValue(hostComponent.getStyle("enableScaleUp"));
+					
+					if (isSet) {
+						enableScaleUp = hostComponent.getStyle("enableScaleUp");
+					}
+				}
+				
+				// Push backgroundColor and backgroundAlpha directly.
+				// Handle undefined backgroundColor by hiding the background object.
+				if (styleManager.isValidStyleValue(getStyle("backgroundColor"))) {
+					background.visible = false;
+					background.includeInLayout = false;
+				}
+				else {
+					background.visible = true;
+					background.includeInLayout = true;
+					bgFill.color = getStyle("backgroundColor");
+					bgFill.alpha = getStyle("backgroundAlpha");
+				}
+				
+				
+				if (imageDisplay.sourceWidth>0 && imageDisplay.sourceHeight>0) {
+					
+					// if image is smaller than width and height and scale up is false
+					// then keep it at that size
+					if (!enableScaleUp
+						&& imageDisplay.sourceHeight < unscaledHeight
+						&& imageDisplay.sourceWidth < unscaledWidth) {
+						
+						contentWidth = imageDisplay.sourceWidth;
+						contentHeight = imageDisplay.sourceHeight;
+						
+						
+						// Center the image.
+						imageDisplay.x = (unscaledWidth - imageDisplay.width) / 2;
+						imageDisplay.y = (unscaledHeight - imageDisplay.height) / 2;
+					}
+						// scales the image down or up to the given height maintaining aspect ratio
+					else if (sizeMode==BitmapScaleMode.FIT_TO_HEIGHT) {
+						scaleFactor = unscaledHeight / imageDisplay.sourceHeight;
+						contentWidth = (scaleFactor > 1) ? imageDisplay.sourceWidth : imageDisplay.sourceWidth * scaleFactor;
+						contentHeight = (scaleFactor > 1) ? imageDisplay.sourceHeight : imageDisplay.height;
+						imageDisplay.height = contentHeight;
+						imageDisplay.width = contentWidth;
+						
+					}
+						// scales the image up or down centering and clipping the bitmap if need be
+					else if (sizeMode=="scale") {
+						imageDisplay.scaleMode = BitmapScaleMode.STRETCH;
+						imageDisplay.width = unscaledWidth;
+						imageDisplay.scaleY = imageDisplay.scaleX;
+						
+						if (imageDisplay.height < unscaledHeight) {
+							imageDisplay.height = unscaledHeight;
+							imageDisplay.scaleX = imageDisplay.scaleY;
+						}
+						
+						// Center the image
+						imageDisplay.x = (unscaledWidth - imageDisplay.width) / 2;
+						imageDisplay.y = (unscaledHeight - imageDisplay.height) / 2;
+						
+						contentWidth = unscaledWidth;
+						contentHeight = unscaledHeight;
+					}
+					else if (sizeMode=="letterbox") {
+						imageDisplay.scaleMode = BitmapScaleMode.LETTERBOX;
+						imageDisplay.width = unscaledWidth;
+						imageDisplay.height = unscaledHeight;
+						contentWidth = unscaledWidth;
+						contentHeight = unscaledHeight;
+					}
+					else {
+						imageDisplay.scaleMode = BitmapScaleMode.LETTERBOX;
+						imageDisplay.width = unscaledWidth;
+						imageDisplay.height = unscaledHeight;
+						contentWidth = unscaledWidth;
+						contentHeight = unscaledHeight;
+					}
+				}
+				
+				
+				// set corner radius on rectangles
+				theMaskFill.radiusX = cornerRadius;
+				theMaskFill.radiusY = cornerRadius;
+				
+				
+				// set border
+				if (border) {
+					
+					if (!hostComponent.getStyle("borderVisible")) {
+						border.visible = false;
+						border.includeInLayout = false;
+					}
+					else {
+						border.visible = true;
+						border.includeInLayout = true;
+						
+						if (borderFit=="exact") {
+							borderGroup.width = contentWidth;
+							borderGroup.height = contentHeight;
+						}
+						else {
+							borderGroup.width = unscaledWidth;
+							borderGroup.height = unscaledHeight;
+						}
+						
+						border.radiusX = cornerRadius;
+						border.radiusY = cornerRadius;
+						
+						if (!isNaN(hostComponent.getStyle("borderColor"))) {
+							SolidColorStroke(border.stroke).color = hostComponent.getStyle("borderColor");
+						}
+						if (!isNaN(hostComponent.getStyle("borderAlpha"))) {
+							SolidColorStroke(border.stroke).alpha = hostComponent.getStyle("borderAlpha");
+						}
+						if (!isNaN(hostComponent.getStyle("borderWeight"))) {
+							SolidColorStroke(border.stroke).weight = hostComponent.getStyle("borderWeight");
+						}
+					}
+					
+					theMaskFill.stroke.weight = border.stroke.weight;
+					borderGroup.x = border.stroke.weight/2;
+					borderGroup.y = border.stroke.weight/2;
+				}
+				
+				
+				// the default flex image skin places the call to super after other changes
+				// not sure if this is what we want to continue to do or not but so far its working
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				hostComponent.contentWidth = unscaledWidth;
+			}
+		]]>        
+	</fx:Script>
+	
+	<!-- host component -->
+	<fx:Metadata>
+		<![CDATA[ 
+		[HostComponent("com.flexcapacitor.controls.Image")]
+		]]>
+	</fx:Metadata>
+	
+	<!-- Defines the appearance of the image background. -->
+	<s:Rect id="background">
+		<s:fill>
+			<s:SolidColor id="bgFill"/>
+		</s:fill>
+	</s:Rect>
+	
+	<!-- Primary image display part -->
+	<s:BitmapImage id="imageDisplay" scaleMode="stretch"  mask="{theMask}" />
+	
+	
+	<!-- Defines the image border -->
+	<s:Group id="borderGroup">
+		<s:Rect id="border" width="100%" height="100%" radiusX="0" radiusY="0" excludeFrom="uninitialized,invalid,loading">
+			<s:stroke>
+				<s:SolidColorStroke pixelHinting="true" color="#FFFFFF" joints="miter"/>
+			</s:stroke>
+		</s:Rect>
+	</s:Group>
+	
+	<!-- Defines the mask. -->
+	<s:Group id="theMask" visible="false" left="0" right="0" top="0" bottom="0">
+		<s:Rect id="theMaskFill" width="100%" height="100%" radiusX="0" radiusY="0">
+			<s:fill>
+				<s:SolidColor color="#000000" />
+			</s:fill>
+			<s:stroke>
+				<s:SolidColorStroke pixelHinting="true" joints="miter" />
+			</s:stroke>
+		</s:Rect>
+	</s:Group>
+	
+	<!-- Progress indicator part -->
+	<s:Range id="progressIndicator" skinClass="spark.skins.spark.ImageLoadingSkin" verticalCenter="0" horizontalCenter="0" includeIn="loading" layoutDirection="ltr" />
+	
+	<!-- Invalid image icon -->
+	<s:BitmapImage includeIn="invalid" source="@Embed(source='Assets.swf',symbol='__brokenImage')" verticalCenter="0" horizontalCenter="0"/>
+	
+</s:Skin>

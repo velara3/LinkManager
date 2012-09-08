@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:inspectors="com.flexcapacitor.inspectors.*"
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:ns1="*"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:supportClasses="spark.components.supportClasses.*"
+			   applicationComplete="application1_applicationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import spark.skins.spark.ImageSkin;
+			
+			[Bindable]
+			public var panels:ArrayCollection;
+			
+			[Bindable]
+			public var currentTarget:UIComponent;
+			
+			protected function application1_applicationCompleteHandler(event:FlexEvent):void {
+				//currentTarget = sparkImage;
+				
+			}
+			
+			
+			protected function sparkImage_completeHandler(event:Event):void {
+				currentTarget = sparkImage;
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:RichEditableText fontSize="24"
+						text="Image Explorer" x="10" y="10"
+						editable="false"/>
+	
+	<mx:FormItem left="10" right="10"
+				 label="Source" y="61">
+		<s:TextInput id="sourceText"
+					 text="ps_logo2.png"
+					 width="100%"/>
+	</mx:FormItem>
+	
+	<mx:DividedBox bottom="10" left="10" right="10" top="90"
+				   direction="horizontal">
+		
+		<mx:TabNavigator height="100%" width="300">
+			
+			<s:NavigatorContent height="100%" label="Layout" width="100%">
+				<s:BorderContainer height="100%" width="100%">
+					<s:Scroller height="100%" width="100%">
+						<s:Group>
+							<s:layout>
+								<s:VerticalLayout/>
+							</s:layout>
+							<inspectors:Constraints height="100%" width="100%"
+													target="{currentTarget}"/>
+						</s:Group>
+					</s:Scroller>
+				</s:BorderContainer>
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent height="100%" label="Properties" width="100%">
+				<s:BorderContainer height="100%" width="100%">
+					<s:Scroller height="100%" width="100%">
+						<s:Group>
+							<s:layout>
+								<s:VerticalLayout/>
+							</s:layout>
+							<inspectors:Property height="100%" width="100%"
+												 target="{currentTarget}"/>
+						</s:Group>
+					</s:Scroller>
+				</s:BorderContainer>
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent height="100%" label="Outline" width="100%">
+				<s:BorderContainer height="100%" width="100%">
+					<s:Scroller height="100%" width="100%">
+						<s:Group>
+							<s:layout>
+								<s:VerticalLayout/>
+							</s:layout>
+							<inspectors:Outline height="100%" width="100%"
+												target="{currentTarget}"/>
+						</s:Group>
+					</s:Scroller>
+				</s:BorderContainer>
+			</s:NavigatorContent>
+			
+		</mx:TabNavigator>
+		
+		<s:Group height="100%" width="100%">
+			<s:Rect height="100%" width="100%">
+				<s:fill>
+					<s:SolidColor color="#eeeeee"/>
+				</s:fill>
+			</s:Rect>
+			<s:Image id="sparkImage"
+					 focusEnabled="true" source="{sourceText.text}" x="10" y="10"
+					 complete="sparkImage_completeHandler(event)"
+					 focusRect="true"/>
+			<s:Rect height="100%" width="100%">
+				<s:stroke>
+					<s:SolidColorStroke color="#333333" weight="1"/>
+				</s:stroke>
+			</s:Rect>
+		</s:Group>
+	</mx:DividedBox>
+	
+	<s:Button id="focusButton"
+			  label="Focus on target" x="200"
+			  click="sparkImage.setFocus()"/>
+	
+</s:Application>

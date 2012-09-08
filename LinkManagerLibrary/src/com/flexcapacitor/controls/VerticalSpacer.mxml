@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Container xmlns:mx="http://www.adobe.com/2006/mxml" initialize="init()" 
+	creationComplete="creationCompleteHandler()" width="100%" alpha=".3" height="10"
+	rollOver="rollOverHandler(event)"
+	rollOut="rollOutHandler(event)"
+	click="clickHandler(event)"
+	useHandCursor="true">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.flexcapacitor.utils.ApplicationUtils;
+			
+			import mx.controls.Text;
+			import mx.core.Application;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.events.StateChangeEvent;
+			import mx.states.State;
+			
+			public static const VERTICAL:String = "vertical";
+			public static const HORIZONTAL:String = "horizontal";
+			private var _sources:Array;
+			private var layoutLine:LayoutLines;
+			public var debugText1:Text = new Text();
+			
+			// when one of the sources is the application we can offset the position
+			// so it does not position the vertical spacer offscreen
+			[Bindable]
+			public var snapToApplicationFooterOffset:int = 0;
+			
+			[Bindable]
+			public var debugSpacer:Boolean = false;
+			
+			// option to constrain the targets to the footer if the footer is farther down
+			// @see snapToApplicationFooterOffset
+			[Bindable]
+			public var snapToApplicationFooter:Boolean = false;
+			
+			// components you want to position
+		    [Inspectable(type="Array", category="General", name="Target Components")]
+			public var targets:Array;
+			
+			// moves targets either vertically from sources or horizontally
+		    [Inspectable(type="String", category="General", name="Direction", defaultValue="vertical", enumeration="horizontal,vertical")]
+			public var direction:String = "vertical";
+			
+			// location to bind your targets to vertically
+			[Bindable]
+			public var YPosition:int = 0;
+			
+			// location to bind your targets to horizontally
+			[Bindable]
+			public var XPosition:int = 0;
+			public var highlightAlpha:Number = 0.05;
+			
+			public var display:Boolean = false;
+			
+			// components to position off of
+		    [Inspectable(type="Array", category="General", name="Source Components")]
+			public function set sources(value:Array):void {
+				_sources = value;
+				var item:UIComponent;
+				
+				// remove references
+				for each (item in sources) {
+					item.removeEventListener(FlexEvent.UPDATE_COMPLETE, positionComponentsHandler);
+				}
+				
+				for each (item in _sources) {
+					item.addEventListener(FlexEvent.UPDATE_COMPLETE, positionComponentsHandler, false, 0, true);
+				}
+				positionComponents();
+			}
+			
+			public function get sources():Array {
+				return _sources;
+			}
+			
+			public function creationCompleteHandler():void {
+				
+				if (debugSpacer) {
+					setStyle("backgroundColor", "black");
+					setStyle("backgroundAlpha", 0.05);
+					
+					debugText1 = new Text();
+					var tf:Text = debugText1;
+					tf.id = "debugText1";
+					tf.text = (id!=null) ? "vertical:" + id : "vertical";
+					tf.setStyle("color", 0x666666);
+					tf.setStyle("fontSize", 8);
+					tf.setStyle("fontWeight","bold");
+					
+		            tf.width = 150;
+		            tf.height = 18;
+					tf.x = 0;
+					tf.y = 0;
+		            
+					//tf.defaultTextFormat = format;
+					addChild(tf);
+					
+					var fillHeight:uint = (height < 16) ? height : 16;
+					var lineColor:uint = 0x333333;
+					
+					// adds a thin black line at the top of the spacer
+					tf.graphics.beginFill(lineColor,.5);
+					tf.graphics.drawRect(-5,0,width + 10,1);
+					tf.graphics.endFill();
+					
+					// adds a thin black line at the bottom of the spacer
+					tf.graphics.beginFill(lineColor,.5);
+					tf.graphics.drawRect(-5,height-1,width+10,1);
+					tf.graphics.endFill();
+					
+					// adds a thin black line at the left of the spacer
+					tf.graphics.beginFill(lineColor,.5);
+					tf.graphics.drawRect(0,-5,1,height + 10);
+					tf.graphics.endFill();
+					
+					// adds a thin black line at the right of the spacer
+					tf.graphics.beginFill(lineColor,.5);
+					tf.graphics.drawRect(width-1,-5,1,height + 10);
+					tf.graphics.endFill();
+					
+					// adds a rounded rectangle stroke to the text field background
+					tf.graphics.beginFill(0x999999,.7);
+					tf.graphics.drawRoundRectComplex(1,1,tf.width+1,fillHeight+1,0,0,0,6);
+					tf.graphics.endFill();
+					
+					// adds a rounded rectangle to the text field background
+					tf.graphics.beginFill(0xffffff,.8);
+					tf.graphics.drawRoundRectComplex(1,1,tf.width,fillHeight,0,0,0,6);
+					tf.graphics.endFill();
+					
+		  		}
+		  		
+			}
+			
+			public function get application():Object {
+				return ApplicationUtils.getInstance();
+			}
+			
+			private function init():void {
+				application.addEventListener(FlexEvent.APPLICATION_COMPLETE, init2, false, 0, true);
+			}
+			
+			private function init2(event:FlexEvent):void {
+				application.addEventListener(FlexEvent.ENTER_STATE, stateChangeHandler, false, 0, true);
+				// should i handle on UPDATE_COMPLETE or is VALUE_COMMIT better? 
+				// why? sometimes you can see the elements repositioned. like it's not happening on the next frame 
+				for each (var item:UIComponent in sources) {
+					if (item==null) continue;
+					item.addEventListener(FlexEvent.UPDATE_COMPLETE, positionComponentsHandler, false, 0, true);
+					//item.addEventListener(FlexEvent.REMOVE, removeComponent, false, 0, true);
+				}
+				
+				// snapToApplicationFooter
+				if (snapToApplicationFooter) {
+					application.addEventListener(FlexEvent.UPDATE_COMPLETE, positionComponentsHandler, false, 0, true);
+				}
+				
+				positionComponents();
+			}
+			
+			private function stateChangeHandler(event:FlexEvent):void {
+				//debugText1.text += "STATE CHANGE";
+				positionComponents();
+			}
+
+			private function positionComponentsHandler(event:FlexEvent):void {
+				positionComponents();
+			}
+			
+			public function refresh():void {
+				positionComponents();
+			}
+			
+			// why isn't there a absoluteX and absoluteY position on components?
+			// position vertical spacer after highest source component
+			// then position target components after vertical spacer
+			public function positionComponents():void {
+				var destinationY:int = 0;
+				var destinationX:int = 0;
+				var bottomEdge:int = 0;
+				var leftEdge:int = 0;
+				var bottomEdgePadding:int = 0;
+				var leftEdgePadding:int = 0;
+				var absolutePositionSource:Point = new Point(0, 0);
+				var absolutePositionTarget:Point = new Point(0, 0);
+				var currentY:int = 0;
+				var currentX:int = 0;
+				var differenceY:int = 0;
+				var differenceX:int = 0;
+				var isApplicationHighest:Boolean = false;
+				var applicationFooterLocation:int = 0;
+						
+				// loop through the source components and move vertical spacer instance
+				// after the highest component
+				for each (var item:* in sources) {
+					if (item==null) continue;
+					
+					// source component is not on the display list
+					if (item.stage==null) {
+						continue;
+					}
+					
+					// get the bottom and left edge of the source component
+					absolutePositionSource = new Point(0, 0);
+					absolutePositionSource = item.localToGlobal(absolutePositionSource);
+					var isType:Application = item as Application;
+					
+					// adjust for the application
+					if (isType != null ) {
+						// get the bottom edge of this component
+						bottomEdge = item.height + absolutePositionSource.y;
+						bottomEdgePadding = bottomEdge - height + snapToApplicationFooterOffset;
+					}
+					else {
+						// get the bottom edge of this component
+						bottomEdge = item.height + absolutePositionSource.y;
+						bottomEdgePadding = bottomEdge + height;
+					}
+					
+					// get the left edge of this component
+					leftEdge = item.width + absolutePositionSource.x;
+					leftEdgePadding = leftEdge + width;
+					
+					// we do this so we always have the highest value from all our sources
+					if (bottomEdgePadding > destinationY) {
+						destinationY = bottomEdgePadding;
+					}
+					if (leftEdgePadding > destinationX) {
+						destinationX = leftEdgePadding;
+					}
+
+					
+					
+					
+				}
+				
+				// snap to application footer
+				if (snapToApplicationFooter) {
+					applicationFooterLocation = Application(application).height + Application(application).y;
+					applicationFooterLocation = applicationFooterLocation - height + snapToApplicationFooterOffset;
+					
+					if (applicationFooterLocation > destinationY) {
+						destinationY = applicationFooterLocation;
+					}
+				}
+				
+				// update location of vertical spacer
+				currentY = this.y;
+				var newY:int = destinationY;
+				
+				//id:footerText;curY:430;destY:889;apt:456;diff:433;destY:863
+				//debugText1.text = String("id:"+this.id);
+				//debugText1.text += String(";curY:"+currentY);
+				var newPoint:Point = new Point(0, 0);
+				
+				// get absolute position of the target
+				newPoint = this.localToGlobal(newPoint);
+				//debugText1.text += String(";newY:"+newY);
+				//debugText1.text += String(";apt:"+newPoint.y);
+				
+				// get difference between absolute position of the target and absolute position of the source
+				differenceY = newY - newPoint.y;
+				// get new y value
+				newY = currentY + differenceY;
+				//debugText1.text += String(";diff:"+differenceY);
+				//debugText1.text += String(";destY:"+newY);
+				
+				this.y = newY - height;
+				
+				// loop through the target components and move them 
+				// beneath the vertical spacer
+				// maybe we should use the move() method
+				for each (var target:UIComponent in targets) {
+					// check if target exists
+					if (target==null) {
+						continue;
+					}
+					
+					// check if target is visible
+					if (target['stage']==null) {
+						continue;
+					}
+					
+					// get current x and y
+					currentX = target.x;
+					currentY = target.y;
+					
+					//id:footerText;curY:430;destY:889;apt:456;diff:433;destY:863
+					if (debugSpacer) debugText1.text = String("id:"+target.id);
+					if (debugSpacer) debugText1.text += String(";curY:"+currentY);
+					
+					absolutePositionTarget = new Point(0, 0);
+					
+					// get absolute position of the target
+					absolutePositionTarget = target.localToGlobal(absolutePositionTarget);
+					
+					if (debugSpacer) debugText1.text += String(";destY:"+destinationY);
+					if (debugSpacer) debugText1.text += String(";absolute pos target y:"+absolutePositionTarget.y);
+					
+					// get difference between absolute position of the target and absolute position of the source
+					differenceY = destinationY - absolutePositionTarget.y;
+					// get new y value
+					destinationY = currentY + differenceY;
+					
+					if (debugSpacer) debugText1.text += String(";diff:"+differenceY);
+					if (debugSpacer) debugText1.text += String(";destY:"+destinationY);
+					
+					// get difference between absolute position of the target and absolute position of the source
+					differenceX = destinationX - absolutePositionTarget.x;
+					// get new x value
+					destinationX = currentX + differenceX;
+					
+					if (direction == VERTICAL) {
+						target.y = destinationY;
+					}
+					else if (direction == HORIZONTAL) {
+						target.x = destinationX;
+					}
+				}
+				
+			}
+			
+			private function removeComponent(event:FlexEvent):void {
+				event.currentTarget.removeEventListener(FlexEvent.UPDATE_COMPLETE, positionComponents);
+				for each (var item:UIComponent in sources) {
+					if (event.currentTarget == item) {
+						//sources.splice(i,1);
+						//sources.slice(i,i);
+					}
+				}
+			}
+			
+	  		private function rollOverHandler(event:MouseEvent):void {
+	  			
+				if (debugSpacer) {
+		  			if (display) { return } 
+					setStyle("backgroundAlpha", 0.2);
+					layoutLine = new LayoutLines();
+					// loop through the sources
+					for each (var item:UIComponent in sources) {
+						if (item==null) return;
+						layoutLine.lineColor = 0x00ff00;
+						layoutLine.lineThickness = 2;
+						layoutLine.drawLines(item);
+					}
+					for each (var target:UIComponent in targets) {
+						if (target==null) return;
+						layoutLine.lineColor = 0xff0000;
+						layoutLine.lineThickness = 2;
+						layoutLine.drawLines(target);
+					}
+				}
+	  		}
+	  		
+	  		private function rollOutHandler(event:MouseEvent):void {
+	  			
+				if (debugSpacer) {
+		  			if (display) { return } 
+					setStyle("backgroundAlpha", 0.05);
+					// loop through the sources
+					for each (var item:UIComponent in sources) {
+						if (item==null) return;
+						layoutLine.clear(item);
+					}
+					for each (var target:UIComponent in targets) {
+						if (target==null) return;
+						layoutLine.clear(target);
+					}
+				}
+	  		}
+	  		
+	  		private function clickHandler(event:MouseEvent):void {
+				if (debugSpacer) {
+		  			display = (!display);
+		  			debugText1.text = "DISPLAY: " + display;
+		  		}
+	  		}
+		]]>
+	</mx:Script>
+</mx:Container>

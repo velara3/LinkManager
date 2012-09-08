@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="300">
+	
+	<fx:Metadata>
+		[Event(name="change", type="com.flexcapacitor.events.InspectorEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.flexcapacitor.utils.InspectorUtils;
+			import com.flexcapacitor.utils.TypeUtils;
+			
+			import flash.sampler.getMemberNames;
+			import flash.utils.describeType;
+			import flash.utils.getQualifiedClassName;
+			
+			import mx.collections.Sort;
+			import mx.collections.SortField;
+			import mx.collections.XMLListCollection;
+			import mx.core.IDataRenderer;
+			import mx.core.UIComponent;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			public var describedType:XML;
+			
+			private var _dataProviderProperties:XMLListCollection;
+			
+			private var _target:Object;
+			
+			public var CUSTOM_ITEM_SORT_CHARACTER:String = "~";
+			
+			public function get dataProviderProperties():XMLListCollection {
+				return _dataProviderProperties;
+			}
+			
+			[Bindable]
+			public function set dataProviderProperties(value:XMLListCollection):void {
+				if (_dataProviderProperties) {
+					_dataProviderProperties = new XMLListCollection(new XMLList());
+				}
+				
+				value.sort = new Sort();
+				value.sort.fields = [ new SortField("@name", true)];
+				value.refresh();
+				_dataProviderProperties = value;
+			}
+			
+			/**
+			 * Get Name or ID of target object
+			 * */
+			public function getName(element:Object):String {
+				var id:String;
+				
+				if (element is UIComponent && element.id != null) {
+					id = UIComponent(element).id;
+				}
+				else if (element.hasOwnProperty("id") && element.id != null) {
+					id = element.id;
+				}
+				else if (element.hasOwnProperty("name") && element.name != null) {
+					id = element.name;
+				}
+				else {
+					id = "";
+				}
+				return id;
+			}
+			
+			/**
+			 * Populates the datagrid with all the properties that describe type returns for the given object
+			 * */
+			public function populatePropertiesGrid(target:Object):void {
+				var fontInfoCollection:XMLListCollection = new XMLListCollection();
+				var allItems:XMLListCollection = new XMLListCollection();
+				var inheritingStylesList:XMLListCollection = new XMLListCollection();
+				var nonInheritingStylesList:XMLListCollection = new XMLListCollection();
+				var objectPropertiesList:XMLListCollection = new XMLListCollection();
+				var accessorList:XMLListCollection;
+				var propertyName:String;
+				var fontLookup:String;
+				var fontFamily:String;
+				var renderingMode:String;
+				var properties:String;
+				var inheritingStyles:Object;
+				var nonInheritingStyles:Object;
+				var property:String;
+				var item:XML;
+				
+				if (target != null) {
+					describedType = describeType(target);
+					accessorList = new XMLListCollection(describedType.accessor);
+					
+					// ADD ACCESSORS LIST
+					allItems.addAll(accessorList);
+					
+					// if item is an object enumerate 
+					if (describedType.@name=="Object") {
+						for (property in target) {
+							item = createXMLItem(property, target[property], true, true);
+							objectPropertiesList.addItem(item); // we could use allItems.addItem();
+						}
+					}
+					
+					allItems.addAll(objectPropertiesList);
+					
+					/* var blah:Object = getMemberNames(this, true);
+					blah = getMemberNames(this);
+					blah = nonInheritingStyles;
+					blah = styleDeclaration;
+					blah = styleName;
+					blah = styleManager.inheritingStyles;
+					blah = styleManager.qualifiedTypeSelectors;
+					blah = styleManager.selectors;
+					blah = styleManager.stylesRoot;
+					blah = styleManager.typeHierarchyCache;
+					blah = styleManager.typeSelectorCache;
+					blah = styleManager.hasAdvancedSelectors(); */
+					
+					if (searchPropertyInput) searchPropertyInput.text = "";
+					
+					// we check for the text flow property so we can see if fonts are embedded
+					if (target.hasOwnProperty("textFlow")) {
+						/* if (target.textFlow.computedFormat) {
+							fontLookup = target.textFlow.computedFormat.fontLookup;
+							fontFamily = target.textFlow.computedFormat.fontFamily;
+							renderingMode = target.textFlow.computedFormat.renderingMode;
+							fontLookup = "<accessor name='fontLookup' value='" + fontLookup + "'/>";
+							fontFamily = "<accessor name='fontFamily' value='" + fontFamily + "'/>";
+							renderingMode = "<accessor name='renderingMode' value='" + renderingMode + "'/>";
+							properties = fontLookup + fontFamily + renderingMode + propertiesList.toString();
+							propertiesList = new XMLList(properties);
+						} */
+					}
+					
+					//allItems.addAll(propertiesList);
+					
+					// attempts to get the values of the properties on the current target
+					for each (var node:XML in allItems) {
+						propertyName = node.@name;
+						if (node.@access != "writeonly") {
+							if (target.hasOwnProperty(propertyName)) {
+								try {
+									node.@value = target[propertyName];
+									node.@isObject = (target[propertyName] is Object);
+								}
+								catch (error:Error) {
+									node.@value = error.message;
+									node.@valueError = true;
+								}
+							}
+						}
+					}
+					
+					// Add in inheriting styles
+					if (target.hasOwnProperty("inheritingStyles")) {
+						inheritingStyles = target.inheritingStyles as Object;
+						
+						for (property in inheritingStyles) {
+							item = createXMLItem(property, inheritingStyles[property], true, true);
+							inheritingStylesList.addItem(item);
+						}
+						
+						trace("Inheriting style count", inheritingStylesList.length);
+						
+						//allItems.addAll(inheritingStylesList);
+					}
+					
+					// Add in non inheriting styles - 
+					if (target.hasOwnProperty("nonInheritingStyles")) {
+						nonInheritingStyles = target.nonInheritingStyles as Object;
+						
+						for (property in nonInheritingStyles) {
+							item = createXMLItem(property, nonInheritingStyles[property], true, false);
+							nonInheritingStylesList.addItem(item);
+						}
+						
+						trace("Non-Inheriting style count", nonInheritingStylesList.length);
+						
+						//allItems.addAll(nonInheritingStylesList);
+					}
+					
+					// create an item for unnamed style
+					var customItem:XML = createXMLItem(CUSTOM_ITEM_SORT_CHARACTER,"");
+					customItem.@search = true;
+					allItems.addItem(customItem);
+					
+					dataProviderProperties = allItems;
+				}
+				else {
+					dataProviderProperties = new XMLListCollection();
+				}
+			}
+			
+			public function get target():Object {
+				return _target;
+			}
+			
+			[Bindable]
+			public function set target(value:Object):void {
+				
+				/* if (!(value is DisplayObject)) {
+					_target = null;
+					enabled = false;
+					return;
+				}
+				else {
+					_target = value;
+					enabled = true;
+				} */
+				
+				_target = value;
+				
+				if (value) {
+					populatePropertiesGrid(value);
+				}
+				else {
+					//clearTargetDimensions();
+				}
+			}
+			
+			public function createXMLItem(name:String, value:*, style:Boolean=false, inheriting:Boolean=false):XML {
+				var xml:XML = <accessor />;
+				xml.@name = name;
+				xml.@style = style;
+				xml.@inheriting = inheriting;
+				xml.@access = "readwrite";
+				xml.@type = InspectorUtils.getValueType(value);
+				xml.@value = String(value);
+				return xml;
+			}
+			
+			protected function filterDisplayObjectChangeHandler(item:XML):Boolean {
+				var itemName:String = item.attribute("name") ? item.attribute("name") : "";
+				var value:String = searchPropertyInput.text;
+				if (itemName.toLowerCase().indexOf(value) != -1) {
+					return true;
+				}
+				return false;
+			}
+			
+			/**
+			 * Filters the property list
+			 * if we type a period or a space at the end of the word then 
+			 * the value and the name have to match exactly (case-insensitive)
+			 * */
+			protected function filterPropertyChangeHandler(item:XML):Boolean {
+				var itemName:String = item.attribute("name") ? item.attribute("name") : "";
+				var value:String = searchPropertyInput.text;
+				var valueLength:int = value.length;
+				var itemNameLength:int = itemName.length;
+				var valueLowerCase:String = value.toLowerCase();
+				var itemNameLowerCase:String = itemName.toLowerCase();
+				
+				// show all items if search is empty
+				if (valueLength==0) {
+					return true;
+				}
+				
+				// show custom item in case of style
+				if (item.@search=="true") {
+					item.@name = CUSTOM_ITEM_SORT_CHARACTER + value;
+					filteredPropertiesCollection.enableAutoUpdate();
+					return true;
+				}
+				else {
+					filteredPropertiesCollection.disableAutoUpdate();
+				}
+				
+				// if we type a period or a space at the end of the word then 
+				// the value and the name have to match exactly (case-insensitive)
+				if (value.lastIndexOf(".")==valueLength-1 || value.lastIndexOf(" ")==valueLength-1) {
+					if (itemNameLowerCase+"."==valueLowerCase || itemNameLowerCase+" "==valueLowerCase) {
+						return true;
+					}
+					else {
+						return false;
+					}
+				}
+				
+				// we filter from any index
+				if (itemNameLowerCase.indexOf(valueLowerCase) != -1) {
+					return true;
+				}
+				
+				return false;
+			}
+			
+			protected function findPropertyChangeHandler(event:TextOperationEvent):void {
+				filteredPropertiesCollection.refresh();
+			}
+			
+			/**
+			 * Attempts to drill into the selected property
+			 * */
+			protected function gridDoubleClickHandler(event:MouseEvent):void {
+				// if the user switches applications and the editor is not closed
+				// we get the text control of the editor. we don't want that so return
+				if (!(event.target is IDataRenderer)) return;
+				
+			
+				var instance:Object = event.currentTarget;
+				var itemRenderer:IDataRenderer = IDataRenderer(event.target);
+				var data:XML = itemRenderer.data as XML;
+				
+				// this is a check for double click on dataGridColumn
+				if (data==null) return;
+				var currentValue:String = String(data.@value);
+				var propertyName:String = data.@name;
+				var type:String = String(data.@type);
+				var something:*;
+				
+				if (Object(target).hasOwnProperty(propertyName)) {
+					something = target[propertyName];
+					
+					if (something is Object) {
+						target = something;
+						InspectorUtils.dispatchTargetChangeEvent(something, this);
+					}
+				}
+			}
+			
+			protected function propertiesGrid_itemEditEndHandler(event:DataGridEvent):void {
+				var instance:Object = event.currentTarget.itemEditorInstance;
+				var data:XML = event.itemRenderer.data as XML;
+				var newValue:String = instance.text;
+				var currentValue:String = String(data[event.dataField]);
+				var propertyName:String = data.@name;
+				var searchField:String = data.@search;
+				var isSearchField:Boolean = searchField=="" || searchField==null ? false : searchField as Boolean;;
+				var type:String = String(data.@type);
+				var styleAttribute:String = data.@style;
+				var isStyle:Boolean = styleAttribute=="" || styleAttribute==null ? false : styleAttribute as Boolean;
+				var newAssignedValue:*;
+				var isChanged:Boolean;
+				
+				if (isSearchField) {
+					propertyName = propertyName.replace(CUSTOM_ITEM_SORT_CHARACTER, "");
+					isStyle = true;
+				}
+				
+				if (target) {
+					newAssignedValue = TypeUtils.getCorrectType(newValue, type)
+					
+					InspectorUtils.setTargetProperty(target, propertyName, newAssignedValue, type, isStyle);
+					
+				}
+				
+				callLater(maintainFocus);
+			}
+			
+			private function maintainFocus():void {
+				//propertiesGrid.editedItemPosition = null;
+			}
+
+			protected function searchPropertyInput_enterHandler(event:FlexEvent):void
+			{
+				var searchText:String = searchPropertyInput.text;
+				var item:XML;
+				
+				if (filteredPropertiesCollection.length==1) {
+					item = filteredPropertiesCollection.getItemAt(0) as XML;
+					if (item) {
+						item.@value = target is UIComponent ? UIComponent(target).getStyle(searchText) : "";
+						filteredPropertiesCollection.itemUpdated(item, "@value");
+						filteredPropertiesCollection.refresh();
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<mx:NumberFormatter id="formatter" useThousandsSeparator="false"/>
+		<mx:ListCollectionView id="filteredPropertiesCollection"
+							   filterFunction="filterPropertyChangeHandler"
+							   list="{dataProviderProperties}"/>
+		<mx:ListCollectionView id="filteredDisplayObjectCollection"
+							   filterFunction="filterDisplayObjectChangeHandler"
+							   list="{dataProviderProperties}"/>
+	</fx:Declarations>
+	
+	<s:VGroup left="10" right="10" top="10" bottom="10">
+		<!--<s:TextInput id="selectedItemLabel"
+								color="#2F3030" fontWeight="normal"
+								text="{selectedItemDescription}" width="100%"
+								borderVisible="false"/>-->
+		
+		<s:HGroup verticalAlign="middle" width="100%">
+			<s:RichText text="Search:"/>
+			<s:TextInput id="searchPropertyInput"
+						 color="#2F3030" fontWeight="normal"
+						 width="100%" enter="searchPropertyInput_enterHandler(event)"
+						 change="findPropertyChangeHandler(event)"/>
+		</s:HGroup>
+		<mx:DataGrid id="propertiesGrid"
+					 dataProvider="{filteredPropertiesCollection}"
+					 doubleClickEnabled="true" height="100%" width="100%"
+					 doubleClick="gridDoubleClickHandler(event)"
+					 draggableColumns="false" editable="true"
+					 itemEditEnd="propertiesGrid_itemEditEndHandler(event)"
+					 verticalGridLines="false">
+			<mx:columns>
+				<mx:DataGridColumn width="300"
+								   dataField="@name" editable="false"
+								   headerText="property"/>
+				<mx:DataGridColumn dataField="@value" editable="true"
+								   headerText="value"/>
+				<mx:DataGridColumn width="75"
+								   dataField="@type" editable="false"
+								   headerText="type"/>
+				<mx:DataGridColumn width="35"
+								   dataField="@style" editable="false"
+								   headerText="Style"/>
+				<mx:DataGridColumn width="35"
+								   dataField="@inheriting" editable="false"
+								   headerText="Inheriting"/>
+			</mx:columns>
+		</mx:DataGrid>
+		<s:TextArea text="{propertiesGrid.selectedItem.@value}" width="100%"
+					heightInLines="3"/>
+	</s:VGroup>
+	
+</s:Group>

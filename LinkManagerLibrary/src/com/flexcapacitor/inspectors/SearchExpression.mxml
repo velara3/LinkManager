@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!---
+
+	Creates a Regular Expression pattern that can be used in eclipse's Find in Files search dialog. 
+	Usually this is all you need to find the exact element you're looking for.
+	The document that the item is declared in can be used to narrow your search
+
+	To Use: Set the target. When set it will show the document that it is in and pattern to find it. 
+	Press the copy button and open Find in Files (ctrl + h). Paste the expression in the search 
+	field and select RegExp match. Click Search. A list of matches will appear. If there are many 
+	matches use the document info shown to narrow it down.  
+
+-->
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 implements="com.flexcapacitor.inspectors.IInspector" xmlns:inspectors="com.flexcapacitor.inspectors.*">
+	
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<!--- If you change the current target then dispatch a change event with the new target assigned to it -->
+	<fx:Metadata>
+		[Event(name="change", type="com.flexcapacitor.events.InspectorEvent")]
+		[Event(name="highlight", type="com.flexcapacitor.events.InspectorEvent")]
+		[Event(name="targetPropertyChange", type="com.flexcapacitor.events.InspectorPropertyEvent")]
+		[Event(name="change", type="com.flexcapacitor.events.InspectorEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.flexcapacitor.events.InspectorEvent;
+			import com.flexcapacitor.utils.InspectorUtils;
+			
+			import mx.core.UIComponent;
+			
+			private var _target:DisplayObject;
+
+			public var targetParentDocument:String;
+			
+			public function get target():* {
+				return _target;
+			}
+			
+			/**
+			 * This is set automatically when a new target is selected
+			 * This can be any type. You must disable this component if the 
+			 * type is not what you can process.
+			 * */
+			[Bindable]
+			public function set target(value:*):void {
+				
+				var classAndPackage:Array;
+				
+				// we only create patterns for MXML display objects at this time
+				// would like to know how to check if the target was declared with an MXML tag
+				if (!(value is DisplayObject)) {
+					_target = null;
+					enabled = false;
+					return;
+				}
+				else {
+					_target = DisplayObject(value);
+					enabled = true;
+				}
+				
+				searchPattern = InspectorUtils.getRegExpSearchPattern(DisplayObject(target));
+				
+				classAndPackage = target is UIComponent ? InspectorUtils.getClassNameAndPackage(UIComponent(target).parentDocument) : [];
+				
+				if (classAndPackage.length>0) {
+					targetParentDocument = classAndPackage[0];
+				}
+				
+				searchPatternText.text = searchPattern
+				
+			}
+			
+			/**
+			 * Will be called by InspectorManager when window is closed
+			 * */
+			public function close():void {
+				
+			}
+			
+			/**
+			 * Copies the search pattern to the clipboard
+			 * Does not copy the parent document name
+			 * */
+			public function copy():void {
+				InspectorUtils.copyToClipboard(searchPattern);
+			}
+			
+			/**
+			 * Copies the search pattern to the clipboard
+			 * Does not copy the parent document name
+			 * */
+			public function copyDocument():void {
+				InspectorUtils.copyToClipboard(searchPattern);
+			}
+			
+			/**
+			 * Regular Expression pattern that can be used in eclipse's Find in Files search dialog. 
+			 * */
+			[Bindable]
+			public var searchPattern:String;
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="document"/>
+		<s:State name="package"/>
+	</s:states>
+
+	
+	<s:HGroup width="100%" verticalAlign="middle">
+		<s:TextArea id="searchPatternText" alpha=".8" heightInLines="1"
+					width="100%" verticalScrollPolicy="off"/>
+		<s:Image source="@Embed('icons/Copy.png')" 
+				 useHandCursor="true" mouseChildren="false" buttonMode="true"
+				 click="copy()" toolTip="Copy the search pattern to the Clipboard"/>
+	</s:HGroup>
+	
+	<s:Group width="100%">
+		<inspectors:Description target="{target}" x="0" y="5" width="100%" currentState="document"
+								includedItems="{['document','package']}"/>
+	</s:Group>
+</s:Group>

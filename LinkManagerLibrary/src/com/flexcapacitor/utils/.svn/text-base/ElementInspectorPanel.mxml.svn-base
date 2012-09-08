@@ -1,0 +1,1453 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   fontFamily="Verdana"
+			   currentState="find" height="400" width="400"
+			   close="close()">
+
+	<fx:Script>
+		<![CDATA[
+			import com.flexcapacitor.graphics.LayoutLines;
+			
+			import flash.debugger.enterDebugger;
+			import flash.desktop.Clipboard;
+			import flash.desktop.ClipboardFormats;
+			import flash.text.engine.FontLookup;
+			import flash.utils.describeType;
+			import flash.utils.getDefinitionByName;
+			import flash.utils.getQualifiedClassName;
+			import flash.utils.getQualifiedSuperclassName;
+			import flash.utils.getTimer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
+			import mx.collections.Sort;
+			import mx.collections.SortField;
+			import mx.collections.XMLListCollection;
+			import mx.controls.dataGridClasses.FTEDataGridItemRenderer;
+			import mx.core.IDataRenderer;
+			import mx.core.IVisualElement;
+			import mx.core.IVisualElementContainer;
+			import mx.core.UIComponent;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.NumberFormatter;
+			import mx.managers.PopUpManager;
+			import mx.utils.NameUtil;
+			
+			import spark.components.ComboBox;
+			import spark.components.Group;
+			import spark.components.TextSelectionHighlighting;
+			import spark.components.supportClasses.GroupBase;
+			import spark.events.TextOperationEvent;
+			import spark.skins.spark.ListSkin;
+
+			private var _dataProvider:String;
+			private var _dataProviderXML:XML = new XML();
+			private var _dataProviderProperties:XMLListCollection = new XMLListCollection(new XMLList());
+			private var _currentTarget:DisplayObject;
+
+			public var mouseTarget:DisplayObject;
+			public var mouseCurrentTarget:DisplayObject;
+
+			public var currentTargetObject:DisplayObject;
+			public var selectedTarget:Object;
+			public var group:Group;
+
+			public var describedType:XML;
+
+			[Bindable]
+			public var searchPattern:String;
+
+			[Bindable]
+			public var selectedItemDescription:String;
+			[Bindable]
+			public var selectedItemClass:String;
+			[Bindable]
+			public var selectedItemSuperClass:String;
+			[Bindable]
+			public var setStyleErrorMessage:String;
+
+			public var classNameRegExp:RegExp = /\[class (.*)\]/i;
+
+			private var _stage:Stage;
+			public var layoutLines:LayoutLines = new LayoutLines();
+			public var showMeasureLines:Boolean;
+
+			[Bindable]
+			public var targetWidth:Number;
+			[Bindable]
+			public var targetHeight:Number;
+			[Bindable]
+			public var targetX:Number;
+			[Bindable]
+			public var targetY:Number;
+			[Bindable]
+			public var targetTop:Number;
+			[Bindable]
+			public var targetLeft:Number;
+			[Bindable]
+			public var targetRight:Number;
+			[Bindable]
+			public var targetBottom:Number;
+			[Bindable]
+			public var targetHorizontal:Number;
+			[Bindable]
+			public var targetVertical:Number;
+			[Bindable]
+			public var targetPercentWidth:Number;
+			[Bindable]
+			public var targetPercentHeight:Number;
+
+			public var currentDragTarget:DisplayObject;
+
+			[Bindable]
+			public var findCaptureTarget:Boolean;
+
+			[Bindable]
+			public function set currentTarget(target:DisplayObject):void {
+				if (target == null) {
+					_currentTarget = null;
+					return;
+				}
+				var targetPath:String = NameUtil.displayObjectToString(DisplayObject(target));
+				var type:String = NameUtil.getUnqualifiedClassName(target);
+				//var type:String = String(Object(target).constructor).replace(classNameRegExp, "$1");
+				_currentTarget = DisplayObject(target);
+				_dataProvider = "";
+				_dataProvider = targetPath.split(".").length > 0 ? targetPath.split(".").join("\n") : "";
+				var treeArray:Array = targetPath.split(".");
+				var length:int = treeArray.length;
+				var string:String = new String();
+				var currentString:String = new String();
+				var name:String;
+				var label:String;
+				var className:String;
+				var element:DisplayObject = target;
+
+				//treeArray.reverse();
+
+				for (var i:int = 0; i < length; i++) {
+					name = treeArray[i];
+					type = getItemType(i, name, target);
+
+					label = type + "  (" + name + ")";
+
+					currentString += "<node name=\"" + name + "\" type=\"" + type + "\" label=\"" + label + "\">";
+				}
+
+				for (i = 0; i < length; i++) {
+					currentString += "</node>";
+				}
+
+				dataProviderXML = new XML("<node label=\"root\">" + currentString + "</node>");
+
+				// there should be an event that is more reliable than callLater 
+				// to know when the dataProvider has been applied 
+				callLater(tree_expandChildren);
+				setTimeout(tree_expandChildren, 500);
+
+				//currentState = "tree";
+			}
+
+			public function get currentTarget():DisplayObject {
+				return _currentTarget;
+			}
+
+			public function get dataProvider():String {
+				return _dataProvider;
+			}
+
+			[Bindable]
+			public function set dataProviderXML(value:XML):void {
+				_dataProviderXML = value;
+			}
+
+			public function get dataProviderXML():XML {
+				return _dataProviderXML;
+			}
+
+			[Bindable]
+			public function set dataProviderProperties(value:XMLListCollection):void {
+				value.sort = new Sort();
+				value.sort.fields = [ new SortField("@name", true)];
+				value.refresh();
+				_dataProviderProperties = value;
+			}
+
+			public function get dataProviderProperties():XMLListCollection {
+				return _dataProviderProperties;
+			}
+
+			protected function panel1_mouseDownHandler(event:MouseEvent):void {
+				if (event.currentTarget != this) {
+					close();
+				}
+			}
+
+			public function close():void {
+				clearSelection(DisplayObject(systemManager));
+				PopUpManager.removePopUp(this);
+			}
+
+			protected function tree_expandChildren():void {
+				if (tree) {
+					tree.openItems = dataProviderXML..node;
+				}
+			}
+
+			protected function viewButton_clickHandler(event:MouseEvent):void {
+				if (currentState == "tree") {
+					currentState = "";
+					tree_expandChildren();
+				}
+				else {
+					currentState = "tree";
+					tree_expandChildren();
+				}
+			}
+
+			/**
+			 * Populates the datagrid with all the properties that describe type returns for the given object
+			 * The type is Object to support more data types than just DisplayObject
+			 * */
+			public function populatePropertiesGrid(target:Object):void {
+				var propertiesList:XMLList;
+				var propertyName:String;
+				var fontLookup:String;
+				var fontFamily:String;
+				var renderingMode:String;
+				var properties:String;
+
+				if (target != null) {
+					describedType = describeType(target);
+					propertiesList = describedType.accessor;
+					if (searchPropertyInput) searchPropertyInput.text = "";
+
+					// we check for the text flow property so we can see if fonts are embedded
+					if (target.hasOwnProperty("textFlow")) {
+						if (target.textFlow.computedFormat) {
+							fontLookup = target.textFlow.computedFormat.fontLookup;
+							fontFamily = target.textFlow.computedFormat.fontFamily;
+							renderingMode = target.textFlow.computedFormat.renderingMode;
+							fontLookup = "<accessor name='fontLookup' value='" + fontLookup + "'/>";
+							fontFamily = "<accessor name='fontFamily' value='" + fontFamily + "'/>";
+							renderingMode = "<accessor name='renderingMode' value='" + renderingMode + "'/>";
+							properties = fontLookup + fontFamily + renderingMode + propertiesList.toString();
+							propertiesList = new XMLList(properties);
+						}
+					}
+
+					// description of the current target  
+					selectedItemDescription = flash.utils.getQualifiedClassName(target) + getName(target);
+					selectedItemClass = flash.utils.getQualifiedClassName(target);
+					selectedItemSuperClass = flash.utils.getQualifiedSuperclassName(target);
+
+					// attempts to get the values of the properties on the current target
+					for each (var node:XML in propertiesList) {
+						propertyName = node.@name;
+						if (node.@access != "writeonly") {
+							if (target.hasOwnProperty(propertyName)) {
+								try {
+									node.@value = target[propertyName];
+									node.@isObject = (target[propertyName] is Object);
+								}
+								catch (error:Error) {
+									node.@value = error.message;
+									node.@valueError = true;
+								}
+							}
+						}
+					}
+
+					dataProviderProperties = new XMLListCollection(propertiesList);
+				}
+				else {
+					dataProviderProperties = new XMLListCollection(new XMLList());
+				}
+			}
+
+			protected function populateLayoutPanel(target:DisplayObject):void {
+				updateTargetDimensionsLayout(currentTarget);
+			}
+
+			/**
+			 * Clear the values in the layout panel. Called when selected target
+			 * is not a display object
+			 * */
+			protected function clearLayoutPanel():void {
+
+				// check if the layout panel has been created yet
+				if (layoutPercentHeightInput == null)
+					return;
+
+				layoutLayoutComboBox.selectedIndex = -1;
+
+				layoutPercentWidthInput.text = "";
+				layoutWidthInput.text = "";
+				layoutPercentHeightInput.text = "";
+				layoutHeightInput.text = "";
+				layoutTopInput.text = "";
+				layoutBottomInput.text = "";
+				layoutLeftInput.text = "";
+				layoutRightInput.text = "";
+				layoutVerticalCenterInput.text = "";
+				layoutHorizontalCenterInput.text = "";
+				layoutVisibleCheckbox.selected = false;
+
+				layoutYInput.text = "";
+				layoutXInput.text = "";
+
+			}
+
+			protected function tree_doubleClickHandler(event:MouseEvent):void {
+				var extendsTextClass:Boolean;
+				selectedTarget = getElement(tree.selectedItem.@name, currentTarget);
+				currentTarget = DisplayObject(selectedTarget);
+				clearSelection(currentTarget);
+				currentState = "properties";
+				populatePropertiesGrid(currentTarget);
+				populateLayoutPanel(currentTarget);
+			}
+
+
+			public function listDoubleClickHandler(event:Event):void {
+				if (selectedItemList.selectedIndex == -1) {
+					selectedItemList.selectedIndex = selectedItemList.dataProvider.length - 1;
+				}
+				var name:String = String(selectedItemList.selectedItem).replace(/.*\((.*)\)/, "$1");
+				selectedTarget = getElement(name, currentTarget);
+				if (selectedTarget == null) {
+					selectedTarget = getElement(name, currentTargetObject);
+				}
+				//currentTarget = null;
+				currentTarget = DisplayObject(selectedTarget);
+				clearSelection(currentTarget);
+				currentState = "properties";
+				populatePropertiesGrid(currentTarget);
+				populateLayoutPanel(currentTarget);
+			}
+
+			public function positionElement(event:Event):void {
+				_stage = ApplicationUtils.getInstance().stage;
+				_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseDrag, true);
+				_stage.addEventListener(MouseEvent.MOUSE_DOWN, moveElementStart, true);
+			}
+
+			private function getItemUnderMouseDrag(event:MouseEvent):void {
+				var itemDescription:String;
+				// we need the target to be draggable
+				var isDraggable:Boolean = event.target as Sprite;
+				var isParentDraggable:Boolean = (event.target.parent != null && event.target.parent is Sprite);
+
+				if (isDraggable) {
+					currentTargetObject = DisplayObject(event.target);
+				}
+				else if (!isDraggable && isParentDraggable) {
+					currentTargetObject = event.target.parent;
+				}
+
+				if (currentTargetObject.width != 0) {
+					drawSelection(currentTargetObject);
+					updateTargetDimensions(currentTargetObject);
+				}
+
+				itemDescription = getItemDescription(currentTargetObject);
+				targetDescriptionText.text = getItemDescription(currentTargetObject);
+				dataProviderList.source = itemDescription.split("\n").join("\n • ").split("\n");
+				dataProviderList.refresh();
+			}
+
+			public function moveElementStart(event:MouseEvent):void {
+				var isDraggable:Boolean = currentTargetObject as Sprite;
+				var isParentDraggable:Boolean = (currentTargetObject.parent != null && currentTargetObject.parent is Sprite);
+
+				if (!isDraggable && isParentDraggable) {
+					currentTargetObject = currentTargetObject.parent;
+				}
+				currentDragTarget = DisplayObject(currentTargetObject);
+				clearSelection(currentDragTarget);
+				// store old values
+				Sprite(currentDragTarget).startDrag();
+				currentDragTarget.addEventListener(MouseEvent.MOUSE_MOVE, moveElement);
+				currentDragTarget.addEventListener(MouseEvent.MOUSE_UP, moveElementFinish);
+				currentDragTarget.addEventListener(MouseEvent.MOUSE_UP, moveElementFinish, true);
+				currentDragTarget.addEventListener(MouseEvent.CLICK, moveElementFinish);
+				currentDragTarget.addEventListener(MouseEvent.CLICK, moveElementFinish, true);
+
+				_stage.removeEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseDrag, true);
+				_stage.removeEventListener(MouseEvent.MOUSE_DOWN, moveElementStart, true);
+				_stage.removeEventListener(MouseEvent.MOUSE_DOWN, moveElementStart);
+			}
+
+			public function moveElement(event:MouseEvent):void {
+				updateTargetDimensions(currentDragTarget);
+				event.updateAfterEvent();
+			}
+
+			public function moveElementFinish(event:MouseEvent):void {
+				Sprite(currentDragTarget).stopDrag();
+				updateTargetDimensions(currentDragTarget);
+				cancelMouseEvent(currentDragTarget);
+				clearSelection(currentDragTarget);
+				currentDragTarget.removeEventListener(MouseEvent.MOUSE_MOVE, moveElement);
+				currentDragTarget.removeEventListener(MouseEvent.MOUSE_UP, moveElementFinish);
+				currentDragTarget.removeEventListener(MouseEvent.MOUSE_UP, moveElementFinish, true);
+				currentDragTarget.removeEventListener(MouseEvent.CLICK, moveElementFinish);
+				currentDragTarget.removeEventListener(MouseEvent.CLICK, moveElementFinish, true);
+				currentTarget = currentDragTarget;
+			}
+
+			/**
+			 * Get the search pattern of the item in the tree.
+			 * For example, if you select a Button with an id of "submitButton" than a
+			 * regular expression pattern will be shown that you can copy and paste into
+			 * Flash Builder's search in files feature.
+			 * CMD + Shift + F opens it. Select regular expression and paste in the pattern
+			 * Click Search and you'll be shown all instances and locations where a
+			 * Button with id of "submitButton" are found.
+			 * */
+			protected function tree_clickHandler(event:MouseEvent):void {
+				if (tree.selectedItem) {
+
+					selectedTarget = getElement(tree.selectedItem.@name, currentTarget);
+					if (selectedTarget == null)
+						return;
+
+					var pattern:String = getRegExpSearchPattern(selectedTarget);
+
+					if (selectedTarget.width != 0) {
+						drawSelection(DisplayObject(selectedTarget));
+						updateTargetDimensions(DisplayObject(selectedTarget));
+					}
+
+					searchPattern = pattern;
+
+					selectedItemDescription = tree.selectedItem.@label;
+				}
+			}
+
+			/**
+			 * Get the search pattern of the item in the list.
+			 * For example, if you select a Button with an id of "submitButton" than a
+			 * regular expression pattern will be shown that you can copy and paste into
+			 * Flash Builder's search in files feature.
+			 * CMD + Shift + F opens it. Select regular expression and paste in the pattern
+			 * Click Search and you'll be shown all instances and locations where a
+			 * Button with id of "submitButton" are found.
+			 * */
+			protected function list_clickHandler():void {
+				if (selectedItemList.selectedItem) {
+					var name:String = String(selectedItemList.selectedItem).replace(/.*\((.*)\)/, "$1");
+					selectedTarget = getElement(name, currentTarget);
+					if (selectedTarget == null) {
+						selectedTarget = getElement(name, currentTargetObject);
+					}
+					currentTarget = null;
+					currentTarget = DisplayObject(selectedTarget);
+
+					var pattern:String = getRegExpSearchPattern(selectedTarget);
+					searchPattern = pattern;
+
+					if (selectedTarget.width != 0) {
+						drawSelection(currentTarget);
+						updateTargetDimensions(currentTarget);
+					}
+				}
+			}
+
+			/**
+			 * Updates the target dimension variables which updates any element
+			 * bound to them
+			 * */
+			public function updateTargetDimensions(target:DisplayObject):void {
+
+				targetWidth = target.width;
+				targetHeight = target.height;
+				targetX = target.x;
+				targetY = target.y;
+
+				if (target is UIComponent) {
+					var uiTarget:UIComponent = UIComponent(target);
+					targetTop = uiTarget.getConstraintValue("top");
+					targetBottom = uiTarget.getConstraintValue("bottom");
+					targetLeft = uiTarget.getConstraintValue("left");
+					targetRight = uiTarget.getConstraintValue("right");
+					targetVertical = uiTarget.getConstraintValue("verticalCenter");
+					targetHorizontal = uiTarget.getConstraintValue("horizontalCenter");
+					targetPercentWidth = uiTarget.percentWidth;
+					targetPercentHeight = uiTarget.percentHeight;
+				}
+			}
+
+			/**
+			 * Clears the target dimension variables which updates any element
+			 * bound to them
+			 * */
+			public function clearTargetDimensions():void {
+
+				targetWidth = undefined;
+				targetHeight = undefined;
+				targetX = undefined;
+				targetY = undefined;
+
+				targetTop = undefined;
+				targetBottom = undefined;
+				targetLeft = undefined;
+				targetRight = undefined;
+				targetVertical = undefined;
+				targetHorizontal = undefined;
+				targetPercentWidth = undefined;
+				targetPercentHeight = undefined;
+
+			}
+
+			/**
+			 * Updates the target dimension layout inspector
+			 * */
+			public function updateTargetDimensionsLayout(target:DisplayObject):void {
+
+				// check if the layout panel has been created yet
+				if (layoutPercentHeightInput == null)
+					return;
+
+				if (target is GroupBase) {
+					var layoutName:String = flash.utils.getQualifiedClassName(GroupBase(target).layout);
+					for each (var item:Object in ArrayList(layoutLayoutComboBox.dataProvider).source) {
+						if (item.label == layoutName) {
+							layoutLayoutComboBox.selectedItem = item;
+						}
+					}
+				}
+
+				if (target is IVisualElement) {
+
+					// check for percent width 
+					if (!isNaN(IVisualElement(target).percentWidth)) {
+						layoutPercentWidthInput.text = String(IVisualElement(target).percentWidth) + "%";
+						layoutWidthInput.text = String(target.width);
+					}
+					else {
+						layoutPercentWidthInput.text = "";
+						layoutWidthInput.text = String(target.width);
+					}
+
+					// check for percent height
+					if (!isNaN(IVisualElement(target).percentHeight)) {
+						layoutPercentHeightInput.text = String(IVisualElement(target).percentHeight) + "%";
+						layoutHeightInput.text = String(target.height);
+					}
+					else {
+						layoutPercentHeightInput.text = "";
+						layoutHeightInput.text = String(target.height);
+					}
+				}
+
+				if (target is UIComponent) {
+					var uiTarget:UIComponent = UIComponent(target);
+					layoutTopInput.text = uiTarget.getConstraintValue("top");
+					layoutBottomInput.text = uiTarget.getConstraintValue("bottom");
+					layoutLeftInput.text = uiTarget.getConstraintValue("left");
+					layoutRightInput.text = uiTarget.getConstraintValue("right");
+					layoutVerticalCenterInput.text = uiTarget.getConstraintValue("verticalCenter");
+					layoutHorizontalCenterInput.text = uiTarget.getConstraintValue("horizontalCenter");
+				}
+				else {
+					layoutTopInput.text = "";
+					layoutBottomInput.text = "";
+					layoutLeftInput.text = "";
+					layoutRightInput.text = "";
+					layoutVerticalCenterInput.text = "";
+					layoutHorizontalCenterInput.text = "";
+
+				}
+
+				if (uiTarget) {
+					if (layoutTopInput.text) {
+						layoutYInput.text = "";
+					}
+					else {
+						layoutYInput.text = String(target.y);
+					}
+
+					if (layoutLeftInput.text) {
+						layoutXInput.text = "";
+					}
+					else {
+						layoutXInput.text = String(target.x);
+					}
+				}
+				else {
+					layoutXInput.text = String(target.x);
+					layoutYInput.text = String(target.y);
+				}
+				
+				layoutVisibleCheckbox.selected = target.visible;
+			}
+
+			/**
+			 * Get class name of element. For example, spark.components.Button would return "Button"
+			 * */
+			public function getItemType(index:int, name:String, target:DisplayObject):String {
+				if (!name)
+					return "";
+
+				var path:String = NameUtil.displayObjectToString(target);
+				var element:DisplayObject = target;
+				var elementArray:Array = path.split(".");
+
+				for (var i:int = index; i < elementArray.length - 1; i++) {
+					element = element.parent;
+				}
+
+				return NameUtil.getUnqualifiedClassName(element);
+
+			}
+
+			/**
+			 * Get reference to the element by it's id in the selected display objects ancestry
+			 * For example, if you have a Button in a container with an id of "myContainer" you can
+			 * pass in the Button reference and the id "myContainer" this method will return the
+			 * reference to "myContainer".
+			 * */
+			public function getElement(name:String, target:DisplayObject):DisplayObject {
+				if (!name)
+					return null;
+
+				var path:String = NameUtil.displayObjectToString(target);
+				var element:DisplayObject = target;
+				var elementArray:Array = path.split(".");
+				var index:int = elementArray.indexOf(name);
+
+				for (var i:int = index; i < elementArray.length; i++) {
+					if (element is UIComponent) {
+						if (element.name == name || UIComponent(element).id == name) {
+							return element;
+						}
+					}
+					else if (element.name == name) {
+						return element;
+					}
+
+					element = element.parent;
+				}
+
+				return null;
+
+			}
+
+
+			protected function propertiesGrid_itemEditEndHandler(event:DataGridEvent):void {
+				var instance:Object = event.currentTarget.itemEditorInstance;
+				var data:XML = event.itemRenderer.data as XML;
+				var newValue:String = instance.text;
+				var currentValue:String = String(data[event.dataField]);
+				var propertyName:String = data.@name;
+				var type:String = String(data.@type);
+				var newAssignedValue:*;
+
+				if (selectedTarget) {
+					newAssignedValue = getCorrectType(newValue, type)
+					if (selectedTarget.hasOwnProperty(propertyName)) {
+						applyProperty(selectedTarget, propertyName, newAssignedValue, type);
+					}
+				}
+				callLater(maintainFocus);
+			}
+
+			private function maintainFocus():void {
+				propertiesGrid.editedItemPosition = null;
+			}
+
+			private function getCorrectType(value:String, type:String):* {
+				if (type == "Boolean" && value.toLowerCase() == "false") {
+					return false;
+				}
+				else if (type == "Boolean" && value.toLowerCase() == "true") {
+					return true;
+				}
+				else if (type == "Number") {
+					return Number(value);
+				}
+				else if (type == "int") {
+					return int(value);
+				}
+				else if (type == "String") {
+					return String(value);
+				}
+				// TODO: Return color type
+				else if (type == "Color") {
+					return String(value);
+				}
+				else if (type == "ClassDefinition") {
+					if (value) {
+						var ClassDefinition:Class = flash.utils.getDefinitionByName(value) as Class;
+						return new ClassDefinition();
+					}
+					return new Object();
+				}
+				else {
+					return value;
+				}
+			}
+
+			protected function debugButtonHandler(event:MouseEvent):void {
+				currentState = "debug";
+				debugDescriptionText.visible = true;
+				debugAgainButton.visible = false;
+				_stage = ApplicationUtils.getInstance().stage;
+				//_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouse);
+				addMouseHandlers();
+			}
+
+			protected function findButtonHandler(event:MouseEvent):void {
+				if (currentState != "find") {
+					_stage = ApplicationUtils.getInstance().stage;
+					addMouseHandlers();
+				}
+				currentState = "find";
+				findAgainButton.visible = true;
+
+			}
+
+			protected function propertiesButtonHandler(event:MouseEvent):void {
+				currentState = "properties";
+			}
+
+			protected function findAgainButtonHandler(event:MouseEvent):void {
+				//currentState = "find";
+				findAgainButton.visible = true;
+				_stage = ApplicationUtils.getInstance().stage;
+				//_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouse);
+				addMouseHandlers();
+			}
+
+			private function addMouseHandlers():void {
+				_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseCapture, true);
+				_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseCapturePriority, true, 100);
+				_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseBubble, false, 100);
+				_stage.addEventListener(MouseEvent.MOUSE_UP, mouseUpHandler, true);
+				_stage.addEventListener(MouseEvent.MOUSE_UP, mouseUpHandler);
+			}
+
+			private function removeMouseHandlers(target:DisplayObject = null):void {
+				_stage.removeEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseCapture, true);
+				_stage.removeEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseCapturePriority, true);
+				_stage.removeEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseBubble);
+				_stage.removeEventListener(MouseEvent.MOUSE_UP, mouseUpHandler, true);
+				_stage.removeEventListener(MouseEvent.MOUSE_UP, mouseUpHandler);
+			}
+
+			private function getItemUnderMouseCapture(event:MouseEvent):void {
+				var itemDescription:String;
+				// we need the target to be draggable
+				var isDraggable:Boolean = event.target as Sprite;
+				var isParentDraggable:Boolean = (event.target.parent != null && event.target.parent is Sprite);
+
+				mouseTarget = DisplayObject(event.target);
+				mouseCurrentTarget = DisplayObject(event.currentTarget);
+
+				if (mouseTarget.width != 0) {
+					drawSelection(mouseTarget);
+					updateTargetDimensions(mouseTarget);
+				}
+				else {
+					clearTargetDimensions();
+				}
+
+				itemDescription = getItemDescription(mouseTarget, 2);
+				targetDescriptionText.text = getItemDescription(mouseTarget, 2);
+				dataProviderList.source = itemDescription.split("\n").join("\n • ").split("\n");
+				dataProviderList.refresh();
+				currentTargetObject = mouseTarget;
+			}
+
+			private function getItemUnderMouseCapturePriority(event:MouseEvent):void {
+				var itemDescription:String;
+
+				itemDescription = getItemDescription(event.target, 2);
+				targetDescriptionText.text = getItemDescription(mouseTarget, 2);
+			}
+
+			private function getItemUnderMouseBubble(event:MouseEvent):void {
+				var itemDescription:String;
+				itemDescription = getItemDescription(event.target, 2);
+				targetDescriptionText.text = getItemDescription(mouseTarget);
+			}
+
+			private function mouseUpHandler(event:MouseEvent):void {
+				var itemDescription:String;
+				var isDraggable:Boolean = event.target as Sprite;
+				var isParentDraggable:Boolean = (event.target.parent != null && event.target.parent is Sprite);
+
+
+				currentTarget = currentTargetObject = DisplayObject(event.target);
+
+				clearSelection(currentTarget);
+
+				if (currentState == "find") {
+					findAgainButton.visible = true;
+
+					// this prevents the click event from ever reaching the target
+					cancelMouseEvent(event.target);
+					cancelMouseEvent(event.currentTarget);
+					InteractiveObject(currentTarget).addEventListener(MouseEvent.CLICK, findClickHandler, false, 1000, true);
+
+				}
+				else if (currentState == "debug") {
+					debugDescriptionText.visible = false;
+					debugAgainButton.visible = true;
+					InteractiveObject(currentTarget).addEventListener(MouseEvent.CLICK, debugClickHandler, false, 1000, true);
+				}
+
+				searchPattern = getRegExpSearchPattern(currentTarget);
+
+				itemDescription = getItemDescription(currentTarget, 2);
+
+				dataProviderList.source = itemDescription.split("\n").join("\n • ").split("\n");
+
+				removeMouseHandlers();
+			}
+
+			private function drawSelection(target:DisplayObject):void {
+				if (showMeasureLines) {
+					layoutLines.drawLines2(target);
+				}
+				else {
+					layoutLines.drawLines(target);
+				}
+			}
+
+			private function clearSelection(target:DisplayObject):void {
+				if (showMeasureLines) {
+					layoutLines.clear2(target);
+				}
+				else {
+					layoutLines.clear(target);
+				}
+			}
+
+			// this prevents the click event from ever reaching the target
+			public function cancelMouseEvent(target:Object):void {
+				var f:Function = function(e:MouseEvent):void {
+						e.stopPropagation();
+						e.stopImmediatePropagation();
+					}
+				DisplayObject(target).addEventListener(MouseEvent.CLICK, f, false, 1000, true);
+				DisplayObject(target).addEventListener(MouseEvent.MOUSE_UP, f, false, 1000, true);
+			}
+
+			[Bindable]
+			public var dataProviderList:ArrayCollection = new ArrayCollection();
+
+			/**
+			 * If the target is a display object we get the unqualified class name and if available the ID
+			 * If the target is an object we get the unqualified class name only
+			 * */
+			public function getItemDescription(target:Object, level:int = 0, description:String = ""):String {
+
+				if (target is DisplayObject) {
+					var name:String = NameUtil.displayObjectToString(DisplayObject(target));
+					if (name == null) {
+						return description != "" ? NameUtil.getUnqualifiedClassName(target) + "\n" + description : NameUtil.getUnqualifiedClassName(target);
+					}
+					var nameArray:Array = (name.length > 0) ? name.split(".") : [ "undefined" ];
+					var id:String = nameArray.pop();
+					var className:String = NameUtil.getUnqualifiedClassName(target);
+					className = id ? className + " (" + id + ")" : className;
+
+					if (level > 0 && target.parent) {
+						description = description != "" ? className + "\n" + description : className;
+						description = getItemDescription(target.parent, --level, description);
+					}
+					else {
+						description = description != "" ? className + "\n" + description : className;
+					}
+
+					return description;
+				}
+				else {
+					return NameUtil.getUnqualifiedClassName(target);
+				}
+			}
+
+
+			public function selectedItemClick(event:Event):void {
+				var name:String;
+				if (selectedItemList != null) {
+					name = String(selectedItemList.selectedItem);
+				}
+
+			}
+
+			/**
+			 * Gets the ID of the target Object
+			 * If no ID is specified returns null
+			 *
+			 * */
+			public function getIdentifier(element:Object):String {
+				var id:String;
+
+				if (element is UIComponent && element.id != null) {
+					id = UIComponent(element).id;
+				}
+				else if (element.hasOwnProperty("id") && element.id != null) {
+					id = element.id;
+				}
+				return id;
+			}
+			
+			/**
+			 * Get Name or ID of target object
+			 * */
+			public function getName(element:Object):String {
+				var id:String;
+				
+				if (element is UIComponent && element.id != null) {
+					id = UIComponent(element).id;
+				}
+				else if (element.hasOwnProperty("id") && element.id != null) {
+					id = element.id;
+				}
+				else if (element.hasOwnProperty("name") && element.name != null) {
+					id = element.name;
+				}
+				else {
+					id = "";
+				}
+				return id;
+			}
+
+			public function debugClickHandler(event:MouseEvent):void {
+				InteractiveObject(event.target).removeEventListener(MouseEvent.CLICK, debugClickHandler, false);
+				var pattern:String = getRegExpSearchPattern(event.target);
+				var pattern2:String = getRegExpSearchPattern(event.target, true);
+
+				trace("\n\n    Hello! Search for this pattern:\n" + pattern + "\n");
+				trace("    Then find the elements click handler and select run to line (CMD + R)");
+				enterDebugger();
+			}
+
+			public function findClickHandler(event:MouseEvent):void {
+				InteractiveObject(event.target).removeEventListener(MouseEvent.CLICK, findClickHandler, false);
+			}
+
+			/**
+			 * With the given target it returns a regexp pattern to find the exact instance in MXML
+			 * If isScript is true it attempts to returns a pattern to find the exact instance in AS3
+			 * The MXML pattern will find the instance with that ID. If the instance doesn't have an ID it no worky.
+			 * NOTE: Press CMD+SHIFT+F to and check regular expression in the Find in Files dialog
+			 * */
+			public function getRegExpSearchPattern(target:Object, isScript:Boolean = false):String {
+				var id:String = getIdentifier(target);
+				var className:String = NameUtil.getUnqualifiedClassName(target);
+				var pattern:String;
+				var pattern2:String;
+
+				if (id == null) {
+					pattern = className + "(.*)";
+				}
+				else {
+					pattern = className + "(.*)id\\s?=\\s?[\"|']" + id + "[\"|']";
+					pattern2 = id + ".addEventListener";
+				}
+
+
+				if (isScript) {
+					return pattern2;
+				}
+
+				return pattern;
+			}
+
+			protected function getStyleClickHandler(event:Event):void {
+				if (selectedTarget is UIComponent) {
+					styleValueInput.text = UIComponent(selectedTarget).getStyle(styleNameInput.text);
+				}
+			}
+
+			protected function setStyleClickHandler(event:Event):void {
+				var styleType:String = styleTypeCombo.selectedItem.type;
+				setStyleErrorMessage = "";
+				if (selectedTarget is UIComponent) {
+					try {
+						UIComponent(selectedTarget).setStyle(styleNameInput.text, getCorrectType(styleValueInput.text, styleType));
+					}
+					catch (error:ErrorEvent) {
+						setStyleErrorMessage = error.text;
+					}
+				}
+			}
+
+			protected function copyToClipboard():void {
+				Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, searchPattern);
+			}
+
+			/**
+			 * Attempts to drill into the selected property
+			 * */
+			protected function gridDoubleClickHandler(event:MouseEvent):void {
+				var instance:Object = event.currentTarget;
+				var itemRenderer:IDataRenderer = IDataRenderer(event.target);
+				var data:XML = itemRenderer.data as XML;
+				var currentValue:String = String(data.@value);
+				var propertyName:String = data.@name;
+				var type:String = String(data.@type);
+				var something:*;
+
+				if (selectedTarget.hasOwnProperty(propertyName)) {
+					something = selectedTarget[propertyName];
+
+					if (something is Object) {
+						populatePropertiesGrid(something);
+						if (something is DisplayObject) {
+							selectedTarget = something;
+							populateLayoutPanel(something);
+						}
+						else {
+							clearLayoutPanel();
+						}
+					}
+				}
+			}
+
+			protected function filterPropertyChangeHandler(item:XML):Boolean {
+				var itemName:String = item.attribute("name") ? item.attribute("name") : "";
+				var value:String = searchPropertyInput.text;
+				if (itemName.toLowerCase().indexOf(value) != -1) {
+					return true;
+				}
+				return false;
+			}
+			
+			protected function filterDisplayObjectChangeHandler(item:XML):Boolean {
+				var itemName:String = item.attribute("name") ? item.attribute("name") : "";
+				var value:String = searchPropertyInput.text;
+				if (itemName.toLowerCase().indexOf(value) != -1) {
+					return true;
+				}
+				return false;
+			}
+
+			protected function findPropertyChangeHandler(event:TextOperationEvent):void {
+				filteredPropertiesCollection.refresh();
+			}
+
+			protected function applyPropertiesToTargetFocusOutHandler(event:Event):void {
+				if (event.currentTarget is ComboBox && event.currentTarget.selectedIndex != -1) {
+					applyProperty(currentTarget, event.currentTarget.selectedItem.name, event.currentTarget.selectedItem.label, event.currentTarget.selectedItem.type);
+				}
+
+				if (event.currentTarget is TextInput) {
+					applyProperty(currentTarget, event.currentTarget.name, event.currentTarget.text);
+				}
+				
+				if (event.currentTarget is CheckBox) {
+					var value:Boolean = event.currentTarget.selected;
+					applyProperty(currentTarget, event.currentTarget.name, value, "Boolean");
+				}
+
+				updateTargetDimensionsLayout(currentTarget);
+			}
+
+			protected function applyProperty(target:Object, property:String, value:*, type:String = "String"):void {
+				var propertyType:String = property.indexOf(":") != -1 ? property.split(":")[1] : type;
+				property = property.indexOf(":") != -1 ? property.split(":")[0] : property;
+				var valueString:String = value is String ? value : null;
+				value = valueString != null && valueString.charAt(valueString.length - 1) == "%" ? valueString.slice(0, valueString.length - 1) : value;
+
+				try {
+					if (target && target.hasOwnProperty(property)) {
+						target[property] = getCorrectType(value, propertyType);
+					}
+				}
+				catch (error:ErrorEvent) {
+					trace("Could not apply " + String(value) + " to " + String(target) + "." + property + "\n" + error.text);
+				}
+			}
+
+
+			protected function selectInputText(event:Event):void {
+				TextInput(event.currentTarget).selectAll();
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="properties"/>
+		<s:State name="tree"/>
+		<s:State name="debug"/>
+		<s:State name="find"/>
+	</s:states>
+
+	<fx:Declarations>
+		<mx:NumberFormatter id="formatter" useThousandsSeparator="false"/>
+		<mx:ListCollectionView id="filteredPropertiesCollection"
+							   filterFunction="filterPropertyChangeHandler"
+							   list="{dataProviderProperties}"/>
+		<mx:ListCollectionView id="filteredDisplayObjectCollection"
+							   filterFunction="filterDisplayObjectChangeHandler"
+							   list="{dataProviderProperties}"/>
+	</fx:Declarations>
+
+
+	<!-- TREE -->
+	<s:VGroup bottom="32" paddingBottom="10" paddingLeft="10" paddingRight="10"
+			  paddingTop="10"
+			  height="100%" width="100%"
+			  includeIn="tree" itemCreationPolicy="immediate">
+		<mx:Tree id="tree"
+				 dataProvider="{dataProviderXML}" doubleClickEnabled="true"
+				 height="100%" labelField="@label" showRoot="false" width="100%"
+				 click="tree_clickHandler(event)"
+				 doubleClick="tree_doubleClickHandler(event)"
+				 show="tree_expandChildren();"
+				 indentation="4">
+		</mx:Tree>
+		<s:HGroup width="100%">
+			<s:TextArea id="searchPatternText"
+						text="{searchPattern}" width="100%"
+						heightInLines="4"/>
+			<s:Button label="Copy" click="copyToClipboard()"/>
+		</s:HGroup>
+	</s:VGroup>
+
+
+	<!-- PROPERTIES -->
+	<s:VGroup bottom="32" paddingBottom="10" paddingLeft="10" paddingRight="10"
+			  paddingTop="10"
+			  height="100%" width="100%"
+			  includeIn="properties">
+		<s:TextInput id="selectedItemLabel"
+					 color="#2F3030" fontWeight="normal"
+					 text="{selectedItemDescription}" width="100%"
+					 borderVisible="false"/>
+		<!--<s:TextInput color="#2F3030" fontWeight="normal"
+					 text="{selectedItemClass}" width="100%"
+					 borderVisible="false"/>-->
+		<s:TextInput color="#2F3030" fontWeight="normal"
+					 text="{selectedItemSuperClass}" width="100%"
+					 borderVisible="false"/>
+		<mx:TabNavigator height="100%" width="100%">
+			<s:NavigatorContent creationPolicy="all" height="100%"
+								label="Layout" width="100%">
+				<s:layout>
+					<s:VerticalLayout gap="5"/>
+				</s:layout>
+				<s:Label text="Layout"/>
+				
+				<s:ComboBox id="layoutLayoutComboBox"
+							width="250" x="10" y="18"
+							change="applyPropertiesToTargetFocusOutHandler(event)"
+							focusOut="applyPropertiesToTargetFocusOutHandler(event)">
+					<s:dataProvider>
+						<mx:ArrayList>
+							<fx:Object label=""
+									   name="layout" type="ClassDefinition"/>
+							<fx:Object label="spark.layouts::BasicLayout"
+									   name="layout" type="ClassDefinition"/>
+							<fx:Object label="spark.layouts::HorizontalLayout"
+									   name="layout" type="ClassDefinition"/>
+							<fx:Object label="spark.layouts::TileLayout"
+									   name="layout" type="ClassDefinition"/>
+							<fx:Object label="spark.layouts::VerticalLayout"
+									   name="layout" type="ClassDefinition"/>
+						</mx:ArrayList>
+					</s:dataProvider>
+				</s:ComboBox>
+				<mx:HRule x="10" y="48"/>
+				<s:TileGroup verticalAlign="middle"
+							 x="10" y="62"
+							 requestedColumnCount="4">
+					<s:Label textAlign="right" text="Width:"/>
+					<s:HGroup>
+						<s:TextInput id="layoutWidthInput"
+									 width="40"
+									 focusIn="selectInputText(event)"
+									 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+									 enter="applyPropertiesToTargetFocusOutHandler(event)"
+									 name="width" tabEnabled="false"/>
+						<s:TextInput id="layoutPercentWidthInput"
+									 width="40"
+									 focusIn="selectInputText(event)"
+									 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+									 enter="applyPropertiesToTargetFocusOutHandler(event)"
+									 name="percentWidth" tabEnabled="false"/>
+					</s:HGroup>
+					<s:Label textAlign="right" text="Height:"/>
+					<s:HGroup>
+						<s:TextInput id="layoutHeightInput"
+									 width="40"
+									 focusIn="selectInputText(event)"
+									 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+									 enter="applyPropertiesToTargetFocusOutHandler(event)"
+									 name="height" tabEnabled="false"/>
+						<s:TextInput id="layoutPercentHeightInput"
+									 width="40"
+									 focusIn="selectInputText(event)"
+									 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+									 enter="applyPropertiesToTargetFocusOutHandler(event)"
+									 name="percentHeight" tabEnabled="false"/>
+					</s:HGroup>
+					<s:Label textAlign="right" text="X:"/>
+					<s:TextInput id="layoutXInput"
+								 width="40"
+								 focusIn="selectInputText(event)"
+								 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+								 enter="applyPropertiesToTargetFocusOutHandler(event)"
+								 name="x"/>
+					<s:Label textAlign="right" text="Y:"/>
+					<s:TextInput id="layoutYInput"
+								 width="40"
+								 focusIn="selectInputText(event)"
+								 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+								 enter="applyPropertiesToTargetFocusOutHandler(event)"
+								 name="y"/>
+				</s:TileGroup>
+				<s:TileGroup x="9" y="126"
+							 requestedColumnCount="4" width="100%">
+					<s:Label textAlign="right" verticalAlign="middle"
+							 text="Top:"/>
+					<s:TextInput id="layoutTopInput"
+								 width="40"
+								 focusIn="selectInputText(event)"
+								 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+								 enter="applyPropertiesToTargetFocusOutHandler(event)"
+								 name="top"/>
+					<s:Label textAlign="right" verticalAlign="middle"
+							 text="Left:"/>
+					<s:TextInput id="layoutLeftInput"
+								 width="40"
+								 focusIn="selectInputText(event)"
+								 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+								 enter="applyPropertiesToTargetFocusOutHandler(event)"
+								 name="left"/>
+					<s:Label textAlign="right" verticalAlign="middle"
+							 text="Bottom:"/>
+					<s:TextInput id="layoutBottomInput"
+								 width="40"
+								 focusIn="selectInputText(event)"
+								 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+								 enter="applyPropertiesToTargetFocusOutHandler(event)"
+								 name="bottom"/>
+					<s:Label textAlign="right" verticalAlign="middle"
+							 text="Right:"/>
+					<s:TextInput id="layoutRightInput"
+								 width="40"
+								 focusIn="selectInputText(event)"
+								 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+								 enter="applyPropertiesToTargetFocusOutHandler(event)"
+								 name="right"/>
+				</s:TileGroup>
+				<s:TileGroup x="10" y="177"
+							 requestedColumnCount="3">
+					<s:Label textAlign="right" verticalAlign="middle"
+							 text="VerticalCenter:"/>
+					<s:TextInput id="layoutVerticalCenterInput"
+								 width="40"
+								 focusIn="selectInputText(event)"
+								 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+								 enter="applyPropertiesToTargetFocusOutHandler(event)"
+								 name="verticalCenter"/>
+					<s:CheckBox label="Visible" id="layoutVisibleCheckbox" name="visible"
+								click="applyPropertiesToTargetFocusOutHandler(event)"/>
+					<s:Label textAlign="right" verticalAlign="middle"
+							 text="HorizontalCenter:"/>
+					<s:TextInput id="layoutHorizontalCenterInput"
+								 width="40"
+								 focusIn="selectInputText(event)"
+								 focusOut="applyPropertiesToTargetFocusOutHandler(event)"
+								 enter="applyPropertiesToTargetFocusOutHandler(event)"
+								 name="horizontalCenter"/>
+				</s:TileGroup>
+			</s:NavigatorContent>
+			<s:NavigatorContent height="100%" label="Styles" width="100%">
+				<s:layout>
+					<s:VerticalLayout/>
+				</s:layout>
+				<s:HGroup verticalAlign="middle" width="100%">
+					<s:RichText text="Style:" width="50"/>
+					<s:TextInput id="styleNameInput"
+								 enter="getStyleClickHandler(event) "
+								 color="#2F3030" fontWeight="normal"
+								 width="100%"/>
+					<s:Button label="Get" click="getStyleClickHandler(event)"/>
+				</s:HGroup>
+				<s:HGroup id="hbox1"
+						  verticalAlign="middle"
+						  width="100%">
+					<s:RichText text="Value:" width="50"/>
+					<s:TextInput id="styleValueInput"
+								 color="#2F3030" fontWeight="normal"
+								 enter="setStyleClickHandler(event)"
+								 width="100%"/>
+					<s:Button label="Set" click="setStyleClickHandler(event)"/>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle"
+						  width="100%">
+					<s:RichText text="Type:" width="50"/>
+					<s:ComboBox id="styleTypeCombo" selectedIndex="0"
+								 color="#2F3030" fontWeight="normal"
+								 width="250">
+						<s:dataProvider>
+							<mx:ArrayList>
+								<fx:Object label="string (default)"
+										   name="String" type="String"/>
+								<fx:Object label="boolean"
+										   name="Boolean" type="Boolean"/>
+								<fx:Object label="color"
+										   name="Color" type="Color"/>
+								<fx:Object label="integer"
+										   name="Integer" type="int"/>
+								<fx:Object label="number"
+										   name="Number" type="Number"/>
+							</mx:ArrayList>
+						</s:dataProvider>
+					</s:ComboBox>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle"
+						  width="100%">
+					<s:RichText text="{setStyleErrorMessage}"/>
+				</s:HGroup>
+			</s:NavigatorContent>
+			<s:NavigatorContent height="100%" label="Alphabetical" width="100%">
+				<s:layout>
+					<s:VerticalLayout/>
+				</s:layout>
+				<s:HGroup verticalAlign="middle" width="100%">
+					<s:RichText text="Search:"/>
+					<s:TextInput id="searchPropertyInput"
+								 color="#2F3030" fontWeight="normal"
+								 width="100%"
+								 change="findPropertyChangeHandler(event)"/>
+				</s:HGroup>
+				<mx:DataGrid id="propertiesGrid"
+							 dataProvider="{filteredPropertiesCollection}"
+							 doubleClickEnabled="true" height="100%" width="100%"
+							 doubleClick="gridDoubleClickHandler(event)"
+							 draggableColumns="false" editable="true"
+							 itemEditEnd="propertiesGrid_itemEditEndHandler(event)"
+							 verticalGridLines="false">
+					<mx:columns>
+						<mx:DataGridColumn width="300"
+										   dataField="@name" editable="false"
+										   headerText="property"/>
+						<mx:DataGridColumn dataField="@value" editable="true"
+										   headerText="value"/>
+						<mx:DataGridColumn width="75"
+										   dataField="@type" editable="false"
+										   headerText="type"/>
+					</mx:columns>
+				</mx:DataGrid>
+				<s:TextArea text="{propertiesGrid.selectedItem.@value}" width="100%"
+							heightInLines="3"/>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+
+
+	<!-- FIND -->
+	<s:VGroup id="vdividedbox2"
+			  paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10"
+			  height="100%" width="100%"
+			  gap="10" includeIn="find">
+		<s:HGroup width="100%">
+			<s:Button id="findAgainButton"
+					  label="Find"
+					  click="findAgainButtonHandler(event)"/>
+			<s:Button id="viewButton0"
+					  label="Hierarchy"
+					  click="viewButton_clickHandler(event)"/>
+			<s:Button id="viewButton1"
+					  label="Properties"
+					  click="listDoubleClickHandler(event)"/>
+			<s:Button id="viewButton3"
+					  label="Position"
+					  click="positionElement(event)"/>
+		</s:HGroup>
+		<s:RichText id="targetDescriptionText"
+					fontSize="12" fontWeight="bold" verticalAlign="middle"
+					height="22" width="100%"/>
+		<s:TileGroup width="100%"
+					 columnWidth="90" requestedRowCount="3" rowHeight="16">
+			<s:RichText id="targetWidthText" text="width:{formatter.format(targetWidth)}"/>
+			<s:RichText id="targetHeightText" text="height:{formatter.format(targetHeight)}"/>
+			<s:RichText id="targetXText" text="x:{formatter.format(targetX)}"/>
+			<s:RichText id="targetYText" text="y:{formatter.format(targetY)}"/>
+			<s:RichText id="topText" text="top:{formatter.format(targetTop)}"/>
+			<s:RichText id="bottomText" text="bottom:{formatter.format(targetBottom)}"/>
+			<s:RichText id="leftText" text="left:{formatter.format(targetLeft)}"/>
+			<s:RichText id="rightText" text="right:{formatter.format(targetRight)}"/>
+			<s:RichText id="horizontalCenterText" text="horizontal:{formatter.format(targetHorizontal)}"/>
+			<s:RichText id="verticalCenterText" text="vertical:{formatter.format(targetVertical)}"/>
+		</s:TileGroup>
+		<s:List id="selectedItemList"
+				dataProvider="{dataProviderList}" doubleClickEnabled="true"
+				height="78" width="100%"
+				click="list_clickHandler()"
+				doubleClick="listDoubleClickHandler(event)"
+				borderVisible="false"
+				skinClass="com.flexcapacitor.skins.ListWithoutScrollbars">
+		</s:List>
+		<s:RichText id="findDescriptionText"
+					text="The Regexp below can be used in Find in Files"
+					width="100%"/>
+
+		<s:HGroup width="100%">
+			<s:TextArea id="searchPatternText2"
+						height="50" text="{searchPattern}" width="100%"
+						heightInLines="4"/>
+			<s:Button label="Copy" click="copyToClipboard()"/>
+		</s:HGroup>
+	</s:VGroup>
+
+
+	<!-- DEBUG -->
+	<s:VGroup height="100%" width="100%"
+			  includeIn="debug">
+		<mx:Spacer width="100%"/>
+		<mx:Spacer height="30" width="100%"/>
+		<s:Button id="debugAgainButton"
+				  label="Debug"
+				  click="debugButtonHandler(event)"/>
+		<s:RichText id="debugDescriptionText"
+					left="10" right="10"
+					text="Click on an interactive object"/>
+		<s:RichText id="debugDescriptionText0"
+					left="10" right="10"
+					text="A click event listener will be added to that object"/>
+		<s:RichText id="debugDescriptionText1"
+					left="9" right="11"
+					text="When you click on that object you will enter the debugger"/>
+		<s:RichText id="debugDescriptionText2"
+					left="5" right="10"
+					text="This allows you to go into the debugger even when no breakpoint is set and inspect the properties of your application"
+					width="100%"/>
+		<s:List id="selectedItemList2"
+				dataProvider="{dataProviderList}" height="78" width="100%" y="208"
+				click="selectedItemClick(event)">
+		</s:List>
+		<s:HGroup width="100%" y="270">
+			<s:TextArea id="searchPatternText0"
+						text="{searchPattern}" width="100%"
+						heightInLines="4"/>
+			<s:Button label="Copy" click="copyToClipboard()"/>
+		</s:HGroup>
+	</s:VGroup>
+
+	<s:HGroup bottom="10" left="10" right="10"
+			  includeIn="debug,find,properties,tree">
+		<s:Button id="viewButton"
+				  label="View"
+				  click="viewButton_clickHandler(event)"/>
+		<s:Button id="findButton"
+				  label="Find"
+				  click="findButtonHandler(event)"/>
+		<s:Button id="propertiesButton"
+				  label="Properties"
+				  click="propertiesButtonHandler(event)"/>
+		<s:Button id="debugButton"
+				  label="Debug"
+				  click="debugButtonHandler(event)"/>
+	</s:HGroup>
+</s:TitleWindow>

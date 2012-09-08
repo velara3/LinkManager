@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:controls="com.flexcapacitor.graphics.*"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 height="100%" width="100%" implements="com.flexcapacitor.inspectors.IInspector"
+		 minHeight="230" xmlns:inspectors="com.flexcapacitor.inspectors.*">
+
+	<!-- Consider width and height to be 100% -->
+
+	<!--- If you change the current target then dispatch a selection event with the new target assigned to it -->
+	<fx:Metadata>
+		[Event(name="change", type="com.flexcapacitor.events.InspectorEvent")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import com.flexcapacitor.events.InspectorEvent;
+			import com.flexcapacitor.graphics.LayoutLines;
+			import com.flexcapacitor.utils.InspectorUtils;
+			import com.flexcapacitor.vo.VisualElementVO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.utils.NameUtil;
+
+			[Bindable]
+			public var dataProviderList:ArrayCollection = new ArrayCollection();
+
+			public var mouseCurrentTarget:DisplayObject;
+
+			public var mouseTarget:DisplayObject;
+
+			[Bindable]
+			public var searchPattern:String;
+
+			[Bindable]
+			public var itemDescription:String;
+			[Bindable]
+			public var parentDocumentName:String;
+
+			private var _stage:Stage;
+
+			private var _target:Object;
+
+			/**
+			 * This prevents the click event from ever reaching the target
+			 * It may be causing an I beam after clicking on text controls - remove mouse up listener?
+			 * */
+			public function cancelMouseEvent(target:Object):void {
+				DisplayObject(target).addEventListener(MouseEvent.CLICK, cancelClickEvent, false, 10000);
+				DisplayObject(target).addEventListener(MouseEvent.MOUSE_UP, cancelMouseUpEvent, false, 10000);
+			}
+			
+			public function cancelClickEvent(e:MouseEvent):void {
+				e.preventDefault();
+				e.stopPropagation();
+				e.stopImmediatePropagation();
+				e.target.removeEventListener(MouseEvent.CLICK, cancelClickEvent);
+			}
+			
+			public function cancelMouseUpEvent(e:MouseEvent):void {
+				e.preventDefault();
+				e.stopPropagation();
+				e.stopImmediatePropagation();
+				e.target.removeEventListener(MouseEvent.MOUSE_UP, cancelMouseUpEvent);
+			}
+
+			/**
+			 * Notify host components when we change the target
+			 * */
+			public function changeTarget():void {
+				InspectorUtils.dispatchTargetChangeEvent(target, this);
+			}
+
+			/**
+			 * WTF am I doing here?
+			 * */
+			public function findClickHandler(event:MouseEvent):void {
+				InteractiveObject(event.target).removeEventListener(MouseEvent.CLICK, findClickHandler, false);
+			}
+
+			/**
+			 * Gets the ID of the target Object
+			 * If no ID is specified returns null
+			 *
+			 * */
+			public function getIdentifier(element:Object):String {
+				var id:String;
+
+				if (element is UIComponent && element.id) {
+					id = UIComponent(element).id;
+				}
+				else if (element.hasOwnProperty("id") && element.id) {
+					id = element.id;
+				}
+				return id;
+			}
+
+			/**
+			 * If the target is a display object we get the unqualified class name and if available the ID
+			 * If the target is an object we get the unqualified class name only
+			 * level is the number of parents to get
+			 * */
+			public function getItemDescription(targetObject:Object, level:int = 0, description:String = ""):String {
+
+				if (targetObject is DisplayObject) {
+					var name:String = NameUtil.displayObjectToString(DisplayObject(targetObject));
+					if (name == null) {
+						return description != "" ? NameUtil.getUnqualifiedClassName(targetObject) + "\n" + description : NameUtil.getUnqualifiedClassName(targetObject);
+					}
+					var nameArray:Array = (name.length > 0) ? name.split(".") : [ "undefined" ];
+					var id:String = nameArray.pop();
+					var className:String = NameUtil.getUnqualifiedClassName(targetObject);
+					className = id ? className + " (" + id + ")" : className;
+
+					if (level > 0 && targetObject.parent) {
+						description = description != "" ? className + "\n" + description : className;
+						description = getItemDescription(targetObject.parent, --level, description);
+					}
+					else {
+						description = description != "" ? className + "\n" + description : className;
+					}
+
+					return description;
+				}
+				else {
+					return NameUtil.getUnqualifiedClassName(targetObject);
+				}
+			}
+
+			public function get target():* {
+				return _target;
+			}
+
+			/**
+			 * This is set automatically when a new target is selected
+			 * This can be any type. You must disable this component if the
+			 * type is not what you can process.
+			 * */
+			[Bindable]
+			public function set target(value:*):void {
+
+				// the target 
+				if (value == null) {
+					_target = null;
+					notSelectionTools.enabled = false;
+					return;
+				}
+				else {
+					notSelectionTools.enabled = true;
+				}
+
+				_target = value;
+			}
+
+			protected function findButtonHandler(event:MouseEvent):void {
+				_stage = FlexGlobals.topLevelApplication.stage;
+				addMouseHandlers();
+				clearSelection(target, true);			}
+
+			protected function clearButtonHandler(event:MouseEvent):void {
+				_stage = FlexGlobals.topLevelApplication.stage;
+				removeMouseHandlers();
+				clearSelection(target, true);
+			}
+
+			protected function cancelButtonHandler(event:MouseEvent):void {
+				removeMouseHandlers();
+				clearSelection(target, true);
+				target = null;
+			}
+
+			private function addMouseHandlers():void {
+				// I don't know how to create a handler that will cancel the event to a button underneath
+				// possibly look at code in FlexibleWindow
+				// possibly use system managers mouse shield???
+				_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseCapture, true, 10000);
+				_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseCapturePriority, true, 10000);
+				_stage.addEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseBubble, false, 10000);
+				_stage.addEventListener(MouseEvent.MOUSE_UP, mouseUpHandler, true, 10000);
+				_stage.addEventListener(MouseEvent.MOUSE_UP, mouseUpHandler, false, 10000);
+			}
+
+			private function clearSelection(target:Object, remove:Boolean = false):void {
+				InspectorUtils.clearSelection(target, remove);
+			}
+
+			private function drawSelection(target:DisplayObject):void {
+				InspectorUtils.drawSelection(target);
+			}
+
+			private function getItemUnderMouseBubble(event:MouseEvent):void {
+				itemDescription = getItemDescription(event.target, 2);
+				//targetDescriptionText.text = getItemDescription(mouseTarget);
+			}
+
+			private function getItemUnderMouseCapture(event:MouseEvent):void {
+				var itemDescription:String;
+				// we need the target to be draggable if we want to allow move
+				var isDraggable:Boolean = event.target as Sprite;
+				var isParentDraggable:Boolean = (event.target.parent != null && event.target.parent is Sprite);
+
+				mouseTarget = DisplayObject(event.target);
+				mouseCurrentTarget = DisplayObject(event.currentTarget);
+
+				if (mouseTarget.width != 0) {
+					// we need to draw on objects parented by the system manager
+					drawSelection(mouseTarget);
+				}
+
+				itemDescription = getItemDescription(mouseTarget, 2);
+				var displayItems:Array = InspectorUtils.getVisualElementsArray(DisplayObject(mouseTarget), displayItems, 2);
+				displayItems.reverse();
+				dataProviderList.source = displayItems;
+				//targetDescriptionText.text = getItemDescription(mouseTarget, 2);
+				//dataProviderList.source = itemDescription.split("\n").join("\n • ").split("\n");
+				dataProviderList.refresh();
+			}
+
+			private function getItemUnderMouseCapturePriority(event:MouseEvent):void {
+				var itemDescription:String;
+			}
+
+			private function mouseUpHandler(event:MouseEvent):void {
+				var isDraggable:Boolean = event.target as Sprite;
+				var isParentDraggable:Boolean = (event.target.parent != null && event.target.parent is Sprite);
+
+				clearSelection(target, true);
+
+				//clearSelection(event.target, true);
+
+				// this prevents the click event from ever reaching the target
+				// this isn't working sometimes for some reason. it used to work.
+				cancelMouseEvent(event.target);
+				//cancelMouseEvent(event.currentTarget); high probability this causes I beam cursor to stay on
+
+				InteractiveObject(event.target).addEventListener(MouseEvent.CLICK, findClickHandler, false, 1000, true);
+
+				setTarget(event.target);
+
+				removeMouseHandlers();
+			}
+
+			private function setTarget(targetObject:Object):void {
+				var displayItems:Array;
+
+				target = targetObject;
+
+				parentDocumentName = target is UIComponent ? InspectorUtils.getParentDocumentName(UIComponent(target)) || "" : InspectorUtils.getParentUIComponentName(DisplayObject(target)) || "";
+				//parentDocumentName = parentDocumentName ? parentDocumentName : "";
+				
+				displayItems = InspectorUtils.getVisualElementsArray(DisplayObject(targetObject), displayItems, 3);
+				displayItems.reverse();
+				displayItems.forEach(labelFunction);
+				dataProviderList.source = displayItems; // itemDescription.split("\n").join("\n • ").split("\n");
+
+				changeTarget();
+				
+				(target is DisplayObject ? drawSelection(DisplayObject(target)) : "");
+				
+				list.selectedIndex = displayItems.length-1;
+			}
+
+			private function removeMouseHandlers():void {
+				if (_stage==null) return;
+				_stage.removeEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseCapture, true);
+				_stage.removeEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseCapturePriority, true);
+				_stage.removeEventListener(MouseEvent.MOUSE_MOVE, getItemUnderMouseBubble);
+				_stage.removeEventListener(MouseEvent.MOUSE_UP, mouseUpHandler, true);
+				_stage.removeEventListener(MouseEvent.MOUSE_UP, mouseUpHandler);
+			}
+
+			protected function list1_clickHandler(event:MouseEvent):void {
+				if (list.selectedItem) {
+					var element:DisplayObject = VisualElementVO(list.selectedItem).element;
+					if (element!=target) {
+						setTarget(element);
+					}
+				}
+			}
+
+			public function labelFunction(item:VisualElementVO, itemIndex:int, array:Array):void {
+				var space:String = "";
+				for (;itemIndex;itemIndex--){space+="   "};
+				var id:String = item.id ? item.id : item.name;
+				var label:String = space + "" + item.type + "   " + id;
+				item.label = label;
+			}
+
+			protected function list_rollOverHandler(event:MouseEvent):void {
+				
+			}
+			
+			/**
+			 * 
+			 * */
+			public function close():void {
+				InspectorUtils.clearSelection(target);
+				target = null;
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<s:HGroup x="10" y="10" gap="10">
+		
+		<s:Image x="14" y="14" width="18" height="18" horizontalAlign="center" scaleMode="letterbox"
+				 smooth="true" source="@Embed('icons/Selection.png')" toolTip="Find Element"
+				 click="findButtonHandler(event)"
+				 verticalAlign="middle"/>
+		
+		<s:Image x="14" y="14" width="18" height="18" horizontalAlign="center" scaleMode="letterbox"
+				 smooth="true" source="@Embed('icons/Selection.png')" toolTip="Hide selection outline"
+				 click="clearButtonHandler(event)" alpha=".5" 
+				 verticalAlign="middle"/>
+		
+		<s:Image x="14" y="14" width="16" height="16" horizontalAlign="center" scaleMode="letterbox"
+				 smooth="true" source="@Embed('icons/Cancel.png')" toolTip="Cancel Selection"
+				 click="cancelButtonHandler(event)" alpha="1" enabled="{target}"
+				 verticalAlign="middle">
+
+		</s:Image>
+	</s:HGroup>
+
+	<s:Group width="100%" height="100%" id="notSelectionTools">
+		<s:RichText id="parentDocumentText" fontWeight="bold"
+					fontSize="12" text="{parentDocumentName}" left="10" y="55" right="10"/>
+		
+		<s:List id="list"
+				left="15" right="15" top="70" height="110"
+				dataProvider="{dataProviderList}" borderVisible="false"
+				click="list1_clickHandler(event)" mouseOver="list_rollOverHandler(event)">
+		</s:List>
+		
+		<s:RichText id="targetDescriptionText" alpha=".9"
+					fontSize="12" text="Search expression" left="10" bottom="58"/>
+		
+		<inspectors:SearchExpression left="10" right="10" bottom="10" y="170" target="{target}" />
+	</s:Group>
+	
+
+</s:Group>

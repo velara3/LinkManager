@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 height="100%" width="100%">
+
+	<!-- LAYOUT LINES -->
+	<!--
+		 To use:
+		 var layoutLines:Layout = new LayoutLines();
+
+		 // draw lines
+		 layoutLines.drawLines(target);
+
+		 // clear lines
+		 layoutLines.clearLines(target);
+
+	-->
+
+	<!-- Consider width and height to be 100% -->
+
+	<!--- If you change the current target then dispatch a selection event with the new target assigned to it -->
+	<fx:Metadata>
+		[Event(name="change", type="com.flexcapacitor.events.SelectionEvent")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.events.MoveEvent;
+			import mx.events.ResizeEvent;
+			[Bindable]
+			public var backgroundFillAlpha:Number = .1;
+			[Bindable]
+			public var backgroundFillColor:uint = 0x000000;
+			[Bindable]
+			public var horizontalOffset:int = -5;
+			[Bindable]
+			public var lineAlpha:Number = .8;
+			[Bindable]
+			public var lineColor:uint = 0x00FF00;
+			[Bindable]
+			public var lineThickness:int = 1;
+			[Bindable]
+			public var verticalOffset:int = -5;
+
+			public function clear(target:Object):void {
+				if (target == null || !target.hasOwnProperty("graphics")) {
+					return;
+				}
+				
+				target.graphics.clear();
+			}
+
+			public function drawLines(target:Object):void {
+				if (target == null || !target.hasOwnProperty("graphics"))
+					return;
+				
+
+				var topOffset:Number = 0 - (lineThickness / 2);
+				var leftOffset:Number = 0 - (lineThickness / 2);
+				var rightOffset:Number = target.width + 0 - (lineThickness / 2);
+				var bottomOffset:Number = target.height + 0 - (lineThickness / 2);
+
+				// add a background fill
+				target.graphics.beginFill(backgroundFillColor, backgroundFillAlpha);
+				target.graphics.drawRect(0, 0, target.width, target.height);
+				target.graphics.endFill();
+
+				// adds a thin line at the top
+				target.graphics.beginFill(lineColor, lineAlpha);
+				target.graphics.drawRect(horizontalOffset, topOffset, target.width + 10, lineThickness);
+				target.graphics.endFill();
+
+				// adds a thin line to the bottom of the spacer
+				target.graphics.beginFill(lineColor, lineAlpha);
+				target.graphics.drawRect(horizontalOffset, bottomOffset, target.width + 10, lineThickness);
+				target.graphics.endFill();
+
+				// adds a thin line to the left
+				target.graphics.beginFill(lineColor, lineAlpha);
+				target.graphics.drawRect(leftOffset, verticalOffset, lineThickness, target.height + 10);
+				target.graphics.endFill();
+
+				// adds a thin line to the right
+				target.graphics.beginFill(lineColor, lineAlpha);
+				target.graphics.drawRect(rightOffset, verticalOffset, lineThickness, target.height + 10);
+				target.graphics.endFill();
+			}
+
+			public function setup(target:Object):void {
+				target.addEventListener(MoveEvent.MOVE, moveHandler, true);
+				target.addEventListener(MoveEvent.MOVE, moveHandler);
+				target.addEventListener(ResizeEvent.RESIZE, resizeHandler, true);
+				target.addEventListener(ResizeEvent.RESIZE, resizeHandler);
+				target.addEventListener(Event.REMOVED, removedHandler, true);
+				
+				drawLines(target);
+			}
+			public function tearDown(target:Object):void {
+				if (target == null || !target.hasOwnProperty("graphics")) {
+					return;
+				}
+				
+				clear(target);
+				
+				target.removeEventListener(MoveEvent.MOVE, moveHandler);
+				target.removeEventListener(MoveEvent.MOVE, moveHandler, true);
+				target.removeEventListener(ResizeEvent.RESIZE, resizeHandler, true);
+				target.removeEventListener(ResizeEvent.RESIZE, resizeHandler);
+				target.removeEventListener(Event.REMOVED, removedHandler, true);
+
+			}
+			
+			
+			/**
+			 *  @private
+			 *  Called when this component moves. Adjust the focus rect.
+			 */
+			private function scrollHandler(event:Event):void {
+				drawLines(event.currentTarget);
+			}
+			
+			/**
+			 *  @private
+			 *  Called when this component moves. Adjust the focus rect.
+			 */
+			private function moveHandler(event:MoveEvent):void {
+				drawLines(event.currentTarget);
+			}
+			
+			/**
+			 *  @private
+			 *  Called when this component resizes. Adjust the focus rect.
+			 */
+			private function resizeHandler(event:Event):void {
+				if (event is ResizeEvent)
+					drawLines(event.currentTarget);
+			}
+			
+			/**
+			 *  @private
+			 *  Called when this component is unloaded. Hide the focus rect.
+			 */
+			private function removedHandler(event:Event):void {
+				// ignore if we captured on a child
+				if (event.target != this)
+					return;
+				
+				clear(event.currentTarget);
+				//var focusObject:DisplayObject = getFocusObject();
+				
+				//if (focusObject)
+				//	focusObject.visible = false;
+			}
+		]]>
+	</fx:Script>
+	<s:Rect height="100%" width="100%">
+		<s:fill>
+			<s:SolidColor color="{backgroundFillColor}"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="{lineColor}"
+								joints="miter" weight="{lineThickness}"/>
+		</s:stroke>
+	</s:Rect>
+</s:Group>

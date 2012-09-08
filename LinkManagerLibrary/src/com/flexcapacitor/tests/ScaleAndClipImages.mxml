@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TO TEST
+	Create a new project and add this as an application
+	Add a reference to the flexcapacitor library in your project
+	Set the source of the images to images in your project with the same width and height
+	Note: You'll need to correct any namespace issues
+-->
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:controls="com.flexcapacitor.controls.*"
+			   height="2000" width="2000">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			public function setNewDimensions(event:MouseEvent):void {
+				var dimensions:Array = event.currentTarget.label.split("x");
+				newImageWidth.value = dimensions[0];
+				newImageHeight.value = dimensions[1];
+			}
+		]]>
+	</fx:Script>
+	
+	<!-- DEFAULT SPARK IMAGE -->
+	<s:Label id="memory" x="20" y="17" fontSize="22" fontWeight="bold" text="Spark Image"/>
+	<s:Label id="memory0" x="21" y="117" fontSize="18" fontWeight="bold" text="Default"/>
+	<s:Label id="memory1" x="451" y="117" fontSize="18" fontWeight="bold" text="Custom"/>
+	<s:Label x="30" y="147" text="Container is smaller"/>
+	<s:VGroup x="20" y="260" width="200">
+		<s:Group width="200" height="90">
+			<s:Image x="10" y="30" width="{newImageWidth.value}" height="{newImageHeight.value}" source="images/photo_large.jpg"/>
+			<s:Label x="10" y="10" text="Height &gt; width"/>
+			<s:Label x="78" y="30" text="Image name&#xd;480x640"/>
+		</s:Group>
+		<s:Group width="200" height="90">
+			<s:Image x="10" y="30" width="{newImageWidth.value}" height="{newImageHeight.value}" source="images/painting_large.jpg"/>
+			<s:Label x="10" y="10" text="Width &gt; Height"/>
+			<s:Label x="78" y="30" text="Image name&#xd;981x625"/>
+		</s:Group>
+	</s:VGroup>
+	
+	<s:Label x="230" y="147" text="Container is larger"/>
+	<s:VGroup x="230" y="260" width="200">
+		<s:Group width="200" height="90">
+			<s:Image x="10" y="30" width="{newImageWidth.value}" height="{newImageHeight.value}" source="images/photo.png"/>
+			<s:Label x="10" y="10" text="Height &gt; width"/>
+			<s:Label x="78" y="30" text="Image name&#xd;24x32"/>
+		</s:Group>
+		<s:Group width="200" height="90">
+			<s:Image x="10" y="30" width="{newImageWidth.value}" height="{newImageHeight.value}" source="images/painting.png"/>
+			<s:Label x="10" y="10" text="Width &gt; Height"/>
+			<s:Label x="78" y="30" text="Image name&#xd;32x20"/>
+		</s:Group>
+	</s:VGroup>
+	
+	
+	
+	<!-- SPARK IMAGE with SKIN -->
+	<s:Label x="458" y="147" text="Container is smaller"/>
+	<s:VGroup x="448" y="260" width="200">
+		<s:Group width="200" height="90">
+			<controls:Image x="10" y="30" width="{newImageWidth.value}" skinClass="com.flexcapacitor.skins.ScaleImageSkin"
+						  height="{newImageHeight.value}" source="images/photo_large.jpg"
+						  borderVisible="{borderVisible.selected}"
+						  borderWeight="{borderWeight.value}"
+						  scaleMode="{scaleMode.selectedItem}"
+						  borderColor="{borderColor.selectedColor}"
+						  borderCaps="{borderCaps.selectedItem}"
+						  borderScaleMode="{borderScaleMode.selectedItem}"
+						  borderJoints="{borderJoints.selectedItem}"
+						  miterLimit="{miterLimit.value}"
+						  pixelHinting="{pixelHinting.selected}"
+						  fillMode="{fillMode.selectedItem}"
+						  verticalAlign="{verticalAlign.selectedItem}"
+						  horizontalAlign="{horizontalAlign.selectedItem}"
+						  borderFit="{borderFit.selectedItem}"
+						  scaleUpSmallerImages="{scaleUpSmallerImages.selected}"
+						  cornerRadius="{cornerRadius.value}"/>
+			<s:Label x="10" y="10" text="Height &gt; Width"/>
+			<s:Label x="78" y="30" text="Image name&#xd;480x640"/>
+		</s:Group>
+		<s:Group width="200" height="90">
+			<controls:Image x="10" y="30" width="{newImageWidth.value}" skinClass="com.flexcapacitor.skins.ScaleImageSkin"
+						  height="{newImageHeight.value}" source="images/painting_large.jpg"
+						  borderVisible="{borderVisible.selected}" 
+						  borderWeight="{borderWeight.value}" 
+						  scaleMode="{scaleMode.selectedItem}"
+						  borderColor="{borderColor.selectedColor}"
+						  borderCaps="{borderCaps.selectedItem}"
+						  borderScaleMode="{borderScaleMode.selectedItem}"
+						  borderJoints="{borderJoints.selectedItem}"
+						  miterLimit="{miterLimit.value}"
+						  pixelHinting="{pixelHinting.selected}"
+						  fillMode="{fillMode.selectedItem}"
+						  verticalAlign="{verticalAlign.selectedItem}"
+						  horizontalAlign="{horizontalAlign.selectedItem}"
+						  borderFit="{borderFit.selectedItem}"
+						  scaleUpSmallerImages="{scaleUpSmallerImages.selected}"
+						  cornerRadius="{cornerRadius.value}"/>
+			<s:Label x="10" y="10" text="Width &gt; Height"/>
+			<s:Label x="78" y="30" text="Image name&#xd;981x625"/>
+		</s:Group>
+	</s:VGroup>
+	
+	<s:Label x="674" y="147" text="Container is larger"/>
+	<s:VGroup x="668" y="260" width="200">
+		<s:Group width="200" height="90">
+			<controls:Image x="10" y="30" width="{newImageWidth.value}" height="{newImageHeight.value}" skinClass="com.flexcapacitor.skins.ScaleImageSkin"
+						  borderVisible="{borderVisible.selected}" 
+						  scaleMode="{scaleMode.selectedItem}"
+						  borderWeight="{borderWeight.value}" 
+						  borderColor="{borderColor.selectedColor}"
+						  borderCaps="{borderCaps.selectedItem}"
+						  borderScaleMode="{borderScaleMode.selectedItem}"
+						  borderJoints="{borderJoints.selectedItem}"
+						  miterLimit="{miterLimit.value}"
+						  pixelHinting="{pixelHinting.selected}"
+						  fillMode="{fillMode.selectedItem}"
+						  verticalAlign="{verticalAlign.selectedItem}"
+						  horizontalAlign="{horizontalAlign.selectedItem}"
+						  borderFit="{borderFit.selectedItem}"
+						  scaleUpSmallerImages="{scaleUpSmallerImages.selected}"
+						  source="images/photo.png"
+						  cornerRadius="{cornerRadius.value}"/>
+			<s:Label x="10" y="10" text="Height &gt; width"/>
+			<s:Label x="78" y="30" text="Image name&#xd;24x32"/>
+		</s:Group>
+		<s:Group>
+			<controls:Image x="10" y="30" 
+						  width="{newImageWidth.value}" height="{newImageHeight.value}" 
+						  skinClass="com.flexcapacitor.skins.ScaleImageSkin"
+						  scaleMode="{scaleMode.selectedItem}"
+						  borderCaps="{borderCaps.selectedItem}"
+						  borderScaleMode="{borderScaleMode.selectedItem}"
+						  borderJoints="{borderJoints.selectedItem}"
+						  miterLimit="{miterLimit.value}"
+						  pixelHinting="{pixelHinting.selected}"
+						  borderVisible="{borderVisible.selected}"
+						  borderWeight="{borderWeight.value}" 
+						  cornerRadius="{cornerRadius.value}"
+						  borderColor="{borderColor.selectedColor}"
+						  fillMode="{fillMode.selectedItem}"
+						  verticalAlign="{verticalAlign.selectedItem}"
+						  horizontalAlign="{horizontalAlign.selectedItem}"
+						  borderFit="{borderFit.selectedItem}"
+						  scaleUpSmallerImages="{scaleUpSmallerImages.selected}"
+						  source="images/painting.png"
+						  />
+			<s:Label x="10" y="10" text="Width &gt; height"/>
+			<s:Label x="78" y="30" text="Image name&#xd;32x20"/>
+		</s:Group>
+	</s:VGroup>
+	
+	<s:HGroup x="174" y="70" verticalAlign="middle">
+	</s:HGroup>  
+	<s:HGroup x="174" y="40" verticalAlign="middle">
+	</s:HGroup>
+	<s:HGroup x="580" y="12" verticalAlign="middle">
+	</s:HGroup>
+	<s:Group x="20" y="164" width="200" height="90">
+		<s:Image x="10" y="30" width="{newImageWidth.value}" height="{newImageHeight.value}" source="images/avatar92.jpg"/>
+		<s:Label x="10" y="10" text="Width = Height"/>
+		<s:Label x="78" y="30" text="Image name&#xd;92x92"/>
+	</s:Group>
+	<s:Group x="228" y="165" width="200" height="90">
+		<s:Image x="10" y="30" width="{newImageWidth.value}" height="{newImageHeight.value}" source="images/avatar32.png"/>
+		<s:Label x="10" y="10" text="Width = Height"/>
+		<s:Label x="78" y="30" text="Image name&#xd;32x32"/>
+	</s:Group>
+	<s:Group x="448" y="165" width="200" height="90">
+		<controls:Image x="10" y="30" width="{newImageWidth.value}" skinClass="com.flexcapacitor.skins.ScaleImageSkin"
+					height="{newImageHeight.value}" source="images/avatar92.jpg"
+					scaleMode="{scaleMode.selectedItem}"
+					borderVisible="{borderVisible.selected}" 
+					borderWeight="{borderWeight.value}" 
+					borderColor="{borderColor.selectedColor}"
+					borderCaps="{borderCaps.selectedItem}"
+					borderScaleMode="{borderScaleMode.selectedItem}"
+					borderJoints="{borderJoints.selectedItem}"
+					miterLimit="{miterLimit.value}"
+					pixelHinting="{pixelHinting.selected}"
+					fillMode="{fillMode.selectedItem}"
+					verticalAlign="{verticalAlign.selectedItem}"
+					horizontalAlign="{horizontalAlign.selectedItem}"
+					borderFit="{borderFit.selectedItem}"
+					scaleUpSmallerImages="{scaleUpSmallerImages.selected}"
+					cornerRadius="{cornerRadius.value}"/>
+		<s:Label x="10" y="10" text="Width = Height"/>
+		<s:Label x="78" y="30" text="Image name&#xd;92x92"/>
+	</s:Group>
+	<s:Group x="668" y="165" width="200" height="90">
+		<controls:Image x="10" y="30" width="{newImageWidth.value}" skinClass="com.flexcapacitor.skins.ScaleImageSkin"
+					  height="{newImageHeight.value}" source="images/avatar32.png"
+					  scaleMode="{scaleMode.selectedItem}"
+					  borderVisible="{borderVisible.selected}" 
+					  borderWeight="{borderWeight.value}" 
+					  borderColor="{borderColor.selectedColor}"
+					  borderCaps="{borderCaps.selectedItem}"
+					  borderScaleMode="{borderScaleMode.selectedItem}"
+					  borderJoints="{borderJoints.selectedItem}"
+					  miterLimit="{miterLimit.value}"
+					  pixelHinting="{pixelHinting.selected}"
+					  fillMode="{fillMode.selectedItem}"
+					  verticalAlign="{verticalAlign.selectedItem}"
+					  horizontalAlign="{horizontalAlign.selectedItem}"
+					  borderFit="{borderFit.selectedItem}"
+					  scaleUpSmallerImages="{scaleUpSmallerImages.selected}"
+					  cornerRadius="{cornerRadius.value}"/>
+		<s:Label x="10" y="10" text="Width = Height"/>
+		<s:Label x="78" y="30" text="Image name&#xd;32x32"/>
+	</s:Group>
+	<s:Group x="841" y="268" width="219" height="255">
+		<s:Rect height="100%" width="100%">
+			<s:stroke>
+				<s:SolidColorStroke color="0xDDDDDD" weight="1"/>
+			</s:stroke>
+		</s:Rect>
+		<s:Label x="75" y="161" text="Fit"/>
+		<s:Label x="11" y="-5" text="Border"/>
+		<s:DropDownList id="borderFit" x="103" y="156" selectedIndex="0">
+			<s:ArrayCollection>
+				<fx:String>exact</fx:String>
+				<fx:String>none</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+		<s:Label x="25" y="109" text="Scale Mode"/>
+		<s:DropDownList id="borderScaleMode" x="103" y="104" selectedIndex="0">
+			<s:ArrayCollection>
+				<fx:String>normal</fx:String>
+				<fx:String>none</fx:String>
+				<fx:String>horizontal</fx:String>
+				<fx:String>vertical</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+		<s:Label x="60" y="135" text="Caps"/>
+		<s:DropDownList id="borderCaps" x="103" y="129" selectedIndex="0">
+			<s:ArrayCollection>
+				<fx:String>none</fx:String>
+				<fx:String>round</fx:String>
+				<fx:String>square</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+		<s:Label x="51" y="82" text="Weight"/>
+		<s:NumericStepper id="borderWeight" x="138" y="75" maximum="1000" value="2"/>
+		<s:CheckBox id="borderVisible" x="125" y="11" label="Visible" selected="false"/>
+		<mx:ColorPicker x="189" y="8" id="borderColor" selectedColor="#FF0000"/>
+		<s:CheckBox id="pixelHinting" x="125" y="45" label="Pixel Hinting" selected="true"/>
+		<s:Label x="57" y="192" text="Joints"/>
+		<s:DropDownList id="borderJoints" x="103" y="186" selectedIndex="1">
+			<s:ArrayCollection>
+				<fx:String>round</fx:String>
+				<fx:String>miter</fx:String>
+				<fx:String>bevel</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+		<s:Label x="33" y="224" text="Miter Limit"/>
+		<s:NumericStepper id="miterLimit" x="150" y="217" maximum="255" value="3"/>
+	</s:Group>
+	<s:Group x="841" y="18" height="242">
+		<s:Rect height="100%" width="100%">
+			<s:stroke>
+				<s:SolidColorStroke color="0xDDDDDD" weight="1"/>
+			</s:stroke>
+		</s:Rect>
+		<s:Label x="16" y="54" text="Horizontal Align"/>
+		<s:DropDownList id="horizontalAlign" x="106" y="49" selectedIndex="1">
+			<s:ArrayCollection>
+				<fx:String>left</fx:String>
+				<fx:String>center</fx:String>
+				<fx:String>right</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+		<s:Label x="31" y="82" text="Vertical Align"/>
+		<s:DropDownList id="verticalAlign" x="106" y="77" selectedIndex="1">
+			<s:ArrayCollection>
+				<fx:String>top</fx:String>
+				<fx:String>middle</fx:String>
+				<fx:String>bottom</fx:String>
+				<fx:String>justify</fx:String>
+				<fx:String>contentJustify</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+		<s:Label x="65" y="139" text="Height"/>
+		<s:NumericStepper id="newImageHeight" x="141" y="133" maximum="1000" value="60"/>
+		<s:Label x="69" y="110" text="Width"/>
+		<s:NumericStepper id="newImageWidth" x="141" y="105" maximum="1000" value="60"/>
+		<s:CheckBox id="scaleUpSmallerImages" x="70" y="218" label="Scale up smaller images"
+					selected="true"/>
+		<s:Label x="22" y="166" text="Corner Radius"/>
+		<s:NumericStepper id="cornerRadius" x="141" y="161" maximum="1000" value="0"/>
+		<s:Label x="51" y="195" text="Fill Mode"/>
+		<s:DropDownList id="fillMode" x="106" y="190" selectedIndex="2">
+			<s:ArrayCollection>
+				<fx:String>clip</fx:String>
+				<fx:String>repeat</fx:String>
+				<fx:String>scale</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+		<s:Label x="36" y="24" text="Scale Mode"/>
+		<s:DropDownList id="scaleMode" x="106" y="19" requireSelection="true" selectedIndex="0">
+			<s:ArrayCollection>
+				<fx:String>full</fx:String>
+				<fx:String>letterbox</fx:String>
+				<fx:String>fitToHeight</fx:String>
+				<fx:String>fitToWidth</fx:String>
+				<fx:String>stretch</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+		<s:Label x="10" y="-5" text="Image"/>
+	</s:Group>
+	<s:HGroup x="272" y="17">
+		<s:Button label="60x60" click="{setNewDimensions(event)}"/>
+		<s:Button label="91x60" click="{setNewDimensions(event)}"/>
+		<s:Button label="92x60" click="{setNewDimensions(event)}"/>
+		<s:Button label="93x60" click="{setNewDimensions(event)}"/>
+		<s:Button label="60x118" click="{setNewDimensions(event)}"/>
+		<s:Button label="92x92" click="{setNewDimensions(event)}"/>
+		<s:Button label="32x32" click="{setNewDimensions(event)}"/>
+	</s:HGroup>
+</s:Application>

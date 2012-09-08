@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:ui="flash.ui.*" xmlns:components="components.*" xmlns:controls="com.flexcapacitor.controls.*">
+
+	<!-- 
+	useHandCursor="true" buttonMode="true" mouseChildren="false" makes the text show a hand cursor on mouse over
+	we also add the roll over events to underline the text as we mouse over it
+	the underline looks like crap :P - have to find out from adobe on this
+	event.currentTarget refers to whatever component it's inside of
+	use UIComponent(event.currentTarget).getRepeaterItem() to get an the object in the dataProvider used to create the link 
+	-->
+	
+	<!-- DATA -->
+	<mx:ArrayCollection id="dataProvider"/>
+	<mx:String id="title"/>
+	<mx:String id="text" />
+	<mx:Object id="selectedItem" />
+	
+	<!-- PANEL DISPLAY -->
+	<mx:Label id="panelTitle1" text="{title}" styleName="sidePanelTitle" x="14" />
+	
+	<mx:VBox width="100%" verticalGap="0" x="27" y="20" >
+		<mx:Repeater id="repeaterInstance" dataProvider="{dataProvider}" width="100%" x="0" y="0">
+			<mx:HBox width="100%" horizontalGap="0" height="100%" >
+				<mx:Image source="images/list_bullet.png" height="100%" horizontalAlign="center" verticalAlign="middle"/> 
+				<!--<components:TextLink 
+					text="{repeaterInstance.currentItem.title}" 
+					url="{repeaterInstance.currentItem.link}"
+					height="16"
+					styleName="linkStyle" rollOverStyle="linkStyleHover"
+					contextMenu="{linkMenu1.menu}" click="{linkClicked(event)}">
+				</components:TextLink>-->
+				<controls:TextLink 
+					text="{repeaterInstance.currentItem.title}" 
+					hyperlink="{repeaterInstance.currentItem.link}"
+					toolTip="{repeaterInstance.currentItem.link}"
+					height="16"
+					styleName="linkStyle" rollOverStyle="linkStyleHover"/>
+				<mx:Text visible="{repeaterInstance.currentItem.count}" text="({repeaterInstance.currentItem.count})" 
+					height="16" styleName="linkCountStyle"/>
+				<mx:Spacer id="categoryCount" errorString="{repeaterInstance.currentItem.count}"/>
+				<mx:Spacer id="spacer" errorString="{repeaterInstance.currentIndex}"/>
+			</mx:HBox>
+		</mx:Repeater>
+	</mx:VBox>
+		
+	<mx:Script>
+		<![CDATA[
+			import mx.core.UIComponent;
+			import flash.debugger.enterDebugger;
+			
+			// when the visitor clicks a link we dispatch a click event to the instance
+			public function linkClicked(event:MouseEvent):void {
+				selectedItem = UIComponent(event.target).getRepeaterItem();
+				dispatchEvent(event);
+			}
+		]]>
+	</mx:Script>
+</mx:Canvas>

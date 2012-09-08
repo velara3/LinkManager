@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas width="100%"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:controls="com.flexcapacitor.controls.*" 
+	xmlns:utils="com.flexcapacitor.utils.*">
+	
+	<mx:ArrayCollection id="defaultCollection">
+		<mx:Array>
+			<mx:Object postId="0" title="Receiving..." date="August 17th, 2008" description="..." category="photos"/>
+		</mx:Array>
+	</mx:ArrayCollection>
+	
+	<mx:Script>
+		<![CDATA[
+			import com.flexcapacitor.utils.ViewCollection;
+			import mx.collections.Sort;
+			import mx.collections.ICollectionView;
+			import mx.collections.IViewCursor;
+			import mx.collections.ArrayCollection;
+			
+			private var _dataProvider:ViewCollection = new ViewCollection();
+			
+			[Bindable]
+			public function set dataProvider(value:*):void {
+				view1.dataProvider = value;
+			}
+			
+			public function get dataProvider():ICollectionView {
+				return view1.dataProvider;
+			}
+			
+			[Bindable]
+			public function set pageDataProvider(value:*):void {
+				pageView1.dataProvider = value;
+			}
+			
+			public function get pageDataProvider():ICollectionView {
+				return pageView1.dataProvider;
+			}
+			
+			// sets the current post id
+			[Bindable]
+			public function set currentId(value:*):void {
+				view1.currentId = value;
+			}
+			
+			public function get currentId():* {
+				return view1.currentId;
+			}
+			
+			// sets the current post index
+			[Bindable]
+			public function set currentIndex(value:int):void {
+				view1.currentIndex = value;
+			}
+			
+			public function get currentIndex():int {
+				return view1.currentIndex;
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<utils:ViewCollection id="view1" key="postid" />
+	
+	<utils:ViewCollection id="pageView1" key="postid" />
+	
+	<mx:states>
+		<mx:State name="post">
+			<mx:RemoveChild target="{contentVBox1}" />
+			<mx:AddChild position="lastChild">
+				
+				<mx:HBox x="0" width="100%">
+					<mx:Image id="previousPostImage" source="images/list_bullet_left.png" height="100%" horizontalAlign="center" verticalAlign="middle"
+						visible="{view1.beforeFirstVisible}"/>
+					<controls:TextLink id="previousPost" text="previous post" height="16" styleName="linkStyle"
+						hyperlink="post?postId={view1.previousItem.postid}"
+						toolTip="post?postId={view1.previousItem.postid}"  
+						htmlText="{view1.previousItem.title}" 
+						visible="{view1.beforeFirstVisible}"/>
+					<controls:Spacer height="100%" width="100%"/>
+					<controls:TextLink id="nextPost" text="next post" height="16" 
+						rollOverStyle="linkStyleHover" styleName="linkStyle"
+						hyperlink="post?postId={view1.nextItem.postid}" 
+						toolTip="post?postId={view1.nextItem.postid}"
+						htmlText="{view1.nextItem.title}" 
+						visible="{view1.afterLastVisible}"/>
+					<mx:Image id="nextPostImage" source="images/list_bullet_right.png" height="100%" horizontalAlign="center" verticalAlign="middle"/>
+				</mx:HBox>
+				
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<mx:VBox id="contentVBox2" width="100%" verticalGap="0" y="40">
+	
+						<mx:Canvas id="canvas2" width="100%" >
+							<controls:TextLink id="textlink2" text="Post Title" height="26" styleName="postTitle" rollOverStyle="postTitleHover" rollOutStyle="postTitle" 
+								hyperlink="post?postId={view1.currentItem.postid}"
+								toolTip="post?postId={view1.currentItem.postid}" 
+								htmlText="{view1.currentItem.title}"/>
+							<controls:TextAutoSize id="textautosize2" y="25" selectable="true" styleName="postDateCreated" text="Saturday, January 1, 2009" 
+								htmlText="{view1.currentItem.dateCreated}" />
+							<controls:TextAutoSize id="postDescription2" width="100%" y="52" styleName="postDescription" text="Description area"
+								htmlText="{view1.currentItem.description}" />
+						</mx:Canvas>
+						<controls:Spacer height="12"  id="spacer3"/>
+						<mx:HBox id="hbox2" width="100%" horizontalAlign="center" horizontalGap="-2" styleName="postMetaData" >
+							<controls:TextAutoSize text="Posted in" paddingLeft="0" paddingRight="0"/>
+							<controls:TextLink text="Category" styleName="postMetaDataLink" 
+								htmlText="{view1.currentItem.categories}"/>
+							<controls:TextAutoSize text="|"/>
+							<controls:TextAutoSize text="No Comments" styleName="postMetaDataLink"/>
+							<mx:Image source="images/list_bullet.png" horizontalAlign="center" verticalAlign="middle" height="100%"/> 
+						</mx:HBox>
+						<controls:Spacer id="spacer4" height="35" />
+					
+					<controls:Spacer id="footerPosition2" width="100%" height="66"/>
+				</mx:VBox>
+			</mx:AddChild>
+			
+		</mx:State>
+		
+		<mx:State name="preloader">
+			<mx:SetProperty target="{hbox1}" name="visible" value="false"/>
+			<mx:SetProperty target="{postDescription}" name="visible" value="false"/>
+			<mx:SetProperty target="{textautosize1}" name="visible" value="false"/>
+			<mx:SetProperty target="{textlink1}" name="visible" value="false"/>
+			<mx:AddChild relativeTo="{contentVBox1}" position="lastChild">
+				<mx:Text text="Please wait..." horizontalCenter="0" verticalCenter="0"/>
+			</mx:AddChild>
+		</mx:State>
+		
+		<mx:State name="page">
+			<mx:RemoveChild target="{contentVBox1}" />
+			<mx:AddChild position="lastChild">
+				<mx:VBox id="contentVBox3" width="100%" verticalGap="0" y="40">
+	
+						<mx:Canvas id="canvas3" width="100%" >
+							<controls:TextLink id="textlink3" text="Page Title" height="26" styleName="postTitle" rollOverStyle="postTitleHover" rollOutStyle="postTitle" 
+								hyperlink="page?postId={pageView1.currentItem.postid}"
+								toolTip="page?postId={pageView1.currentItem.postid}" 
+								htmlText="{pageView1.currentItem.title}"/>
+							<controls:TextAutoSize id="textautosize3" y="25" selectable="true" styleName="postDateCreated" text="Saturday, January 1, 2009" 
+								htmlText="{pageView1.currentItem.dateCreated}" />
+							<controls:TextAutoSize id="postDescription3" width="100%" y="52" styleName="postDescription" text="Description area"
+								htmlText="{pageView1.currentItem.description}" />
+						</mx:Canvas>
+						<controls:Spacer height="12" id="spacer6"/>
+						<mx:HBox id="hbox3" width="100%" horizontalAlign="center" horizontalGap="-2" styleName="postMetaData" >
+							<controls:TextAutoSize text="Posted in" paddingLeft="0" paddingRight="0"/>
+							<controls:TextLink text="Category" styleName="postMetaDataLink" 
+								htmlText="{pageView1.currentItem.categories}"/>
+							<controls:TextAutoSize text="|"/>
+							<controls:TextAutoSize text="No Comments" styleName="postMetaDataLink"/>
+							<mx:Image source="images/list_bullet.png" horizontalAlign="center" verticalAlign="middle" height="100%"/> 
+						</mx:HBox>
+						<controls:Spacer id="spacer5" height="35" />
+					
+					<controls:Spacer id="footerPosition6" width="100%" height="66"/>
+				</mx:VBox>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	
+	<mx:transitions>
+		<mx:Transition >
+			<mx:Dissolve />
+		</mx:Transition>
+	</mx:transitions>
+	
+	<mx:VBox id="contentVBox1" width="100%" verticalGap="0">
+	
+		<mx:Repeater id="postsRepeater" dataProvider="{view1.dataProvider}" width="100%" x="0" y="0">
+			<mx:Canvas width="100%" id="canvas1">
+				<controls:TextLink id="textlink1" text="Post Title" height="26" styleName="postTitle"
+					rollOverStyle="postTitleHover" rollOutStyle="postTitle" 
+					hyperlink="post?postId={postsRepeater.currentItem.postid}" 
+					toolTip="post?postId={postsRepeater.currentItem.postid}"
+					htmlText="{postsRepeater.currentItem.title}">
+				</controls:TextLink>
+				<controls:TextAutoSize y="25" selectable="true" styleName="postDateCreated" id="textautosize1" htmlText="{postsRepeater.currentItem.dateCreated}" text="Saturday, January 1, 2009"/>
+				<controls:TextAutoSize id="postDescription" htmlText="{postsRepeater.currentItem.description}" width="100%" y="52" styleName="postDescription" text="Description area"/>
+			</mx:Canvas>
+			<controls:Spacer height="12"  id="spacer1"/>
+			<mx:HBox width="100%" horizontalAlign="center" horizontalGap="-2" styleName="postMetaData" id="hbox1">
+				<controls:TextAutoSize text="Posted in" paddingLeft="0" paddingRight="0"/>
+				<controls:TextLink text="Category" styleName="postMetaDataLink"  htmlText="{postsRepeater.currentItem.categories}"/>
+				<controls:TextAutoSize text="|"/>
+				<controls:TextAutoSize text="No Comments" styleName="postMetaDataLink"/>
+				<mx:Image source="images/list_bullet.png" horizontalAlign="center" verticalAlign="middle" height="100%"/> 
+			</mx:HBox>
+			<controls:Spacer height="35" id="spacer2"/>
+		</mx:Repeater>
+		
+		<controls:Spacer id="footerPosition" width="100%" height="66"/>
+	</mx:VBox>
+			
+</mx:Canvas>
